@@ -1,0 +1,116 @@
+/* --- СТИЛИ АВТОРИЗАЦИИ (AUTH_STYLES.CSS) --- */
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    height: 100vh;
+    /* Тот самый зеленый градиент */
+    background: radial-gradient(circle at 50% 50%, #354A36 0%, #1A261B 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Карточка (Центральный блок) */
+.auth-card {
+    background-color: #E9F0D8; /* Светло-бежевый */
+    width: 400px;
+    padding: 50px 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+/* Заголовок */
+.auth-title {
+    color: #354A36; /* Темно-зеленый */
+    font-size: 36px;
+    font-weight: 800;
+    margin: 0 0 10px 0;
+}
+
+/* Поля ввода */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 15px 20px;
+    border-radius: 12px;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: #555;
+    box-sizing: border-box; /* Чтобы padding не ломал ширину */
+    font-weight: bold;
+    background-color: white;
+}
+.auth-input::placeholder {
+    color: #BBB;
+    font-weight: 600;
+}
+
+/* Кнопки */
+.btn-submit {
+    width: 100%;
+    padding: 12px;
+    border-radius: 20px;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    color: white;
+    text-decoration: none;
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+/* Темно-зеленая кнопка (Войти) */
+.btn-green {
+    background-color: #3C4C37;
+    width: 50%; /* Чуть уже, как на скрине */
+    margin: 0 auto; /* По центру */
+}
+.btn-green:hover {
+    background-color: #2D3A29;
+}
+
+/* Желтая кнопка (Регистрация) */
+.btn-yellow {
+    background-color: #EEDC82;
+    color: #5C1515; /* Темно-красный текст */
+    width: 60%;
+    margin: 0 auto;
+}
+.btn-yellow:hover {
+    background-color: #E0C060;
+}
+
+/* Ссылка (если нужно переключиться) */
+.auth-link {
+    margin-top: 10px;
+    color: #354A36;
+    text-decoration: none;
+    font-size: 14px;
+}
+.auth-link:hover {
+    text-decoration: underline;
+}
+
+/* Блок ошибок */
+.error-msg {
+    color: #701A1A;
+    background: rgba(255, 0, 0, 0.1);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 14px;
+    display: none; /* Скрыто по умолчанию */
+}

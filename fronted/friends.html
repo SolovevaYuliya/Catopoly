@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"><title>Друзья | Catopoly</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/MainMenu.css">
+    <link rel="stylesheet" href="/static/friends_styles.css">
+</head>
+<body>
+<div class="app-container">
+
+  <aside class="sidebar">
+    <div class="logo">CATOPOLY</div>
+    <nav class="nav-menu">
+      <a href="/" class="nav-item"><i class="fa-solid fa-house"></i> Главная</a>
+      <a href="/api/search" class="nav-item"><i class="fa-solid fa-magnifying-glass"></i> Поиск игры</a>
+      <a href="/api/friends" class="nav-item active"><i class="fa-solid fa-user-group"></i> Друзья</a>
+      <a href="/profile" class="nav-item"><i class="fa-solid fa-user"></i> Профиль</a>
+      <a href="/api/fields" class="nav-item"><i class="fa-solid fa-border-all"></i> Игровые поля</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="capsule-wrapper"><div class="title-capsule">Список друзей</div></div>
+      <div class="player-section">
+          <div class="player-info">
+              <div class="avatar-box" style="background-image: url('{{ user.avatar_url if user.avatar_url else '' }}');"></div>
+              <span class="player-name">{{ user.username }}</span>
+          </div>
+          <a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket logout-btn"></i></a>
+      </div>
+    </header>
+
+    <div class="content-body" style="justify-content: flex-start; padding-top: 40px;">
+
+        <!-- ПОИСКОВАЯ СТРОКА -->
+        <form action="/api/friends" method="get" class="search-container">
+            <input type="text" name="search_query" class="search-input" placeholder="Найти игрока по имени..." value="{{ query if query else '' }}">
+            <button type="submit" style="background: none; border: none; position: absolute; right: 25px; top: 50%; transform: translateY(-50%);">
+                <i class="fa-solid fa-magnifying-glass search-icon" style="position: static;"></i>
+            </button>
+        </form>
+
+        <!-- 1. РЕЗУЛЬТАТЫ ПОИСКА (Если человек что-то ввел) -->
+        {% if query %}
+            <h2 class="section-title">Результаты поиска по "{{ query }}":</h2>
+            <div class="friends-grid">
+                    {% if not search_results %}
+                        <p class="empty-msg">Никого не нашли :(</p>
+                    {% else %}
+                        {% for item in search_results %}
+                        <div class="friend-item">
+                            <div class="friend-avatar" style="background-image: url('{{ item.user.avatar_url if item.user.avatar_url else '' }}'); background-size: cover;"></div>
+                            <div class="friend-info">
+                                <span class="friend-name">{{ item.user.username }}</span>
+
+                                {% if item.status == None %}
+                                    <!-- Если связи вообще нет -->
+                                    <a href="/send_request/{{ item.user.id }}" class="btn-action btn-yellow">КИНУТЬ ЗАЯВКУ</a>
+                                {% elif item.status == 'pending' %}
+                                    <!-- Если заявка уже висит -->
+                                    <span style="color: #EEDC82; font-size: 12px; font-weight: bold;">ЗАЯВКА ОТПРАВЛЕНА</span>
+                                {% elif item.status == 'accepted' %}
+                                    <!-- Если уже друзья -->
+                                    <span style="color: #839680; font-size: 12px; font-weight: bold;">УЖЕ В ДРУЗЬЯХ</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            <hr class="divider">
+        {% endif %}
+
+        <!-- 2. ВХОДЯЩИЕ ЗАЯВКИ (Видны только если они есть) -->
+        {% if incoming %}
+            <h2 class="section-title">Входящие заявки:</h2>
+            <div class="friends-grid">
+                {% for requester in incoming %}
+                <div class="friend-item">
+                    <div class="friend-avatar" style="background-image: url('{{ requester.avatar_url if requester.avatar_url else '' }}'); background-size: cover;"></div>
+                    <div class="friend-info">
+                        <span class="friend-name">{{ requester.username }}</span>
+                        <a href="/accept_friend/{{ requester.id }}" class="btn-action btn-green">ПРИНЯТЬ</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <hr class="divider">
+        {% endif %}
+
+        <!-- 3. МОИ ДРУЗЬЯ (Основной список) -->
+        <h2 class="section-title">Мои друзья:</h2>
+        <div class="friends-grid">
+            {% if not friends %}
+                <p class="empty-msg">У вас пока нет друзей. Самое время кого-нибудь найти!</p>
+            {% else %}
+                {% for friend in friends %}
+                <div class="friend-item">
+                    <!-- Клик по аватарке ведет в профиль -->
+                    <a href="/profile/{{ friend.id }}">
+                        <div class="friend-avatar" style="background-image: url('{{ friend.avatar_url if friend.avatar_url else '' }}'); background-size: cover; cursor: pointer;"></div>
+                    </a>
+                    <div class="friend-info">
+                        <a href="/profile/{{ friend.id }}" style="text-decoration: none;">
+                            <span class="friend-name">{{ friend.username }}</span>
+                        </a>
+                        <!-- Кнопка удаления друга -->
+                        <a href="/delete_friend/{{ friend.id }}" class="btn-action btn-red" style="font-size: 10px; margin-top: 5px;">УДАЛИТЬ</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+  </main>
+
+  <!-- БЛОК ВСПЛЫВАЮЩИХ УВЕДОМЛЕНИЙ (ИНВАЙТОВ) -->
+  {% if pending_invites %}
+  <div class="floating-notifications">
+      {% for invite, sender_name in pending_invites %}
+      <div class="invite-toast">
+          <div class="toast-header">Новое приглашение!</div>
+          <div class="toast-body">
+              Игрок <b>{{ sender_name }}</b> приглашает тебя в игру #{{ invite.game_id }}
+          </div>
+          <div class="toast-btns">
+              <a href="/accept_invite/{{ invite.id }}" class="btn-toast btn-toast-acc">ПРИНЯТЬ</a>
+              <a href="/decline_invite/{{ invite.id }}" class="btn-toast btn-toast-dec">ОТКЛОНИТЬ</a>
+          </div>
+      </div>
+      {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+<script src="/static/global_sync.js"></script>
+</body>
+</html>

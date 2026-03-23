@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"><title>Профиль | Catopoly</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/MainMenu.css"><link rel="stylesheet" href="/static/profile_styles.css">
+</head>
+<body>
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="logo">CATOPOLY</div>
+    <nav class="nav-menu">
+      <a href="/" class="nav-item"><i class="fa-solid fa-house"></i> Главная</a>
+      <a href="/api/search" class="nav-item"><i class="fa-solid fa-magnifying-glass"></i> Поиск игры</a>
+      <a href="/api/friends" class="nav-item"><i class="fa-solid fa-user-group"></i> Друзья</a>
+      <a href="/profile" class="nav-item active"><i class="fa-solid fa-user"></i> Профиль</a>
+      <a href="/api/fields" class="nav-item"><i class="fa-solid fa-border-all"></i> Игровые поля</a>
+    </nav>
+  </aside>
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="capsule-wrapper"><div class="title-capsule">Профиль</div></div>
+      <div class="player-section">
+          <div class="player-info">
+              <div class="avatar-box" style="background-image: url('{{ user.avatar_url if user.avatar_url else '/static/default_cat.png' }}');"></div>
+              <span class="player-name">{{ user.username }}</span>
+          </div>
+          <a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket logout-btn"></i></a>
+      </div>
+    </header>
+    <div class="content-body" style="justify-content: flex-start;">
+        <div class="profile-wrapper">
+            <div class="hero-block">
+                <!-- Контейнер аватара -->
+                <div class="avatar-square" style="background-image: url('{{ avatar_url }}'); background-size: cover; background-position: center; position: relative;">
+                    {% if is_own_profile %}
+                    <form action="/upload_avatar" method="post" enctype="multipart/form-data" id="avatarForm" style="display: none;">
+                        <input type="file" name="file" id="fileInput" accept="image/*">
+                    </form>
+                    {% endif %}
+                </div>
+
+                <div class="user-info">
+                    <div class="user-name" style="font-size: 80px; color: white; font-weight: 900;">{{ username }}</div>
+                    <div class="user-date" style="color: #839680;">в игре с {{ created_at }}</div>
+
+                    {% if is_own_profile %}
+                    <!-- Кнопка, которая просто открывает выбор файла -->
+                    <button class="btn-modal-create" style="margin-top: 20px; font-size: 18px; padding: 15px 40px;" onclick="document.getElementById('fileInput').click()">Изменить фото</button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="stats-block">
+                <div class="stats-header" style="font-size: 40px; margin-top: 50px; color: white; font-weight: 800;">Статистика</div>
+                <div class="stats-lines" style="margin-top: 20px; font-size: 24px; display: flex; flex-direction: column; gap: 10px;">
+                    <div class="stat-line">Матчей сыграно: <span class="stat-num" style="color: #EEDC82;">{{ matches_count }}</span></div>
+                    <div class="stat-line">Побед: <span class="stat-num" style="color: #EEDC82;">{{ wins_count }}</span></div>
+                    <div class="stat-line">Друзья: <span class="stat-num" style="color: #EEDC82;">{{ friends_count }}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+  </main>
+
+  {% if pending_invites %}
+  <div class="floating-notifications">
+      {% for invite, sender_name in pending_invites %}
+      <div class="invite-toast">
+          <div class="toast-header">Новый инвайт!</div>
+          <div class="toast-body">Игрок <b>{{ sender_name }}</b> приглашает тебя в игру #{{ invite.game_id }}</div>
+          <div class="toast-btns">
+              <a href="/accept_invite/{{ invite.id }}" class="btn-toast btn-toast-acc">ПРИНЯТЬ</a>
+              <a href="/decline_invite/{{ invite.id }}" class="btn-toast btn-toast-dec">ОТКЛОНИТЬ</a>
+          </div>
+      </div>
+      {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<script src="/static/global_sync.js"></script>
+<script>
+    // Скрипт, который ловит выбор файла и САМ отправляет форму
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                document.getElementById('avatarForm').submit();
+            }
+        });
+    }
+</script>
+</body>
+</html>

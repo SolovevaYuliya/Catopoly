@@ -1,0 +1,45 @@
+body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+.game-screen { display: flex; justify-content: center; align-items: center; height: 100vh; width: 100vw; background: #151F16; }
+
+.board {
+    display: grid; grid-template-columns: 100px repeat(9, 1fr) 100px; grid-template-rows: 100px repeat(9, 1fr) 100px;
+    width: 98vh; height: 98vh; background-color: #BFDBAE; border: 3px solid #2F3E2E; box-shadow: 0 0 50px black;
+}
+
+.cell { border: 1px solid #2F3E2E; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5px; text-align: center; transition: 0.3s; }
+.cell-name { font-size: 8px; font-weight: 900; color: #1A261B; text-transform: uppercase; line-height: 1; }
+.cell-price { font-size: 10px; font-weight: bold; margin-top: 5px; }
+
+.corner { background-color: #DDE8D1 !important; }
+.color-bar { position: absolute; }
+.bottom .color-bar { top: 0; width: 100%; height: 15px; border-bottom: 1px solid #2F3E2E; }
+.top .color-bar { bottom: 0; width: 100%; height: 15px; border-top: 1px solid #2F3E2E; }
+.left .color-bar { right: 0; height: 100%; width: 15px; border-left: 1px solid #2F3E2E; }
+.right .color-bar { left: 0; height: 100%; width: 15px; border-right: 1px solid #2F3E2E; }
+
+.brown { background-color: #955436; } .light-blue { background-color: #AAE0FA; } .pink { background-color: #D93A96; } .orange { background-color: #F7941D; }
+.red { background-color: #ED1B24; } .yellow { background-color: #FEF200; } .green { background-color: #1FB25A; } .dark-blue { background-color: #0072BB; }
+
+.center { grid-column: 2 / 11; grid-row: 2 / 11; background: #E9F0D8; display: flex; align-items: center; justify-content: center; position: relative; border: 1px solid #2F3E2E;}
+.center-logo { font-size: 80px; font-weight: 900; color: #701A1A; opacity: 0.1; transform: rotate(-45deg); position: absolute; }
+.dice-btn { z-index: 10; background: #3C4C37; color: white; padding: 15px 40px; border-radius: 20px; border: none; font-weight: 900; cursor: pointer; }
+
+/* ПОДСВЕТКА КЛЕТОК ПРИ ПОКУПКЕ */
+.owned-by-1 { box-shadow: inset 0 0 0 5px #ED1B24 !important; background-color: rgba(237, 27, 36, 0.3) !important; }
+.owned-by-2 { box-shadow: inset 0 0 0 5px #0072BB !important; background-color: rgba(0, 114, 187, 0.3) !important; }
+.owned-by-3 { box-shadow: inset 0 0 0 5px #FEF200 !important; background-color: rgba(254, 242, 0, 0.3) !important; }
+.owned-by-4 { box-shadow: inset 0 0 0 5px #1FB25A !important; background-color: rgba(31, 178, 90, 0.3) !important; }
+
+/* ФИШКИ ИГРОКОВ */
+.tokens-container { position: absolute; bottom: 5px; left: 0; width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+.player-token { width: 14px; height: 14px; border-radius: 50%; border: 1px solid white; box-shadow: 0 2px 4px black; }
+.token-color-1 { background: #ED1B24; }
+.token-color-2 { background: #0072BB; }
+.token-color-3 { background: #FEF200; }
+.token-color-4 { background: #1FB25A; }
+
+.players-list { position: fixed; left: 20px; top: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+.player-card { background: #E9F0D8; padding: 10px 15px; border-radius: 12px; display: flex; align-items: center; gap: 10px; border: 2px solid #2F3E2E; width: 180px; }
+.p-avatar { width: 45px; height: 45px; background-color: #5C1515; border-radius: 8px; background-size: cover; background-position: center; }
+.p-info b { font-size: 14px; } .p-info span { color: #701A1A; font-weight: 900; }
+.quit-btn { position: fixed; right: 20px; top: 20px; background: #701A1A; color: white; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 900; z-index: 1000; }

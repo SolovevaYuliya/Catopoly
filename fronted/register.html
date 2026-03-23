@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация | Catopoly</title>
+    <link rel="stylesheet" href="/static/auth_styles.css">
+</head>
+<body>
+
+    <div class="auth-card">
+        <h1 class="auth-title">Регистрация</h1>
+
+        {% if error %}
+        <div class="error-msg" style="display: block;">{{ error }}</div>
+        {% endif %}
+
+        <form action="/register" method="post" class="form-group">
+            <!-- Username нужен для профиля -->
+            <input type="text" name="username" class="auth-input" placeholder="Имя игрока" required>
+            <input type="email" name="email" class="auth-input" placeholder="Email" required>
+            <input type="password" name="password" class="auth-input" placeholder="Пароль" required>
+
+            <button type="submit" class="btn-submit btn-yellow">Зарегистрироваться</button>
+        </form>
+
+        <a href="/login" class="auth-link">Уже есть аккаунт? Войти</a>
+    </div>
+
+</body>
+</html>
