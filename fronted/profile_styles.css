@@ -1,0 +1,98 @@
+/* --- СТИЛИ ПРОФИЛЯ --- */
+
+.profile-wrapper {
+    margin-top: 100px;
+    margin-left: 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 60px;
+}
+
+.hero-block {
+    display: flex;
+    align-items: center;
+    gap: 60px;
+}
+
+.avatar-square {
+    position: relative; /* Чтобы label внутри позиционировался ровно */
+    width: 300px;
+    height: 300px;
+    background-color: #5C1515;
+    border-radius: 40px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+
+    /* Настройки отображения фото */
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+}
+
+.avatar-square:hover {
+    filter: brightness(1.1);
+}
+
+/* Растягиваем метку выбора файла на весь квадрат */
+.avatar-square label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.user-name {
+    font-size: 90px;
+    font-weight: 800;
+    color: #E2EAD2;
+    line-height: 1;
+    text-transform: capitalize;
+}
+
+.user-date {
+    font-size: 24px;
+    color: #839680;
+    font-weight: 600;
+}
+
+.stats-block {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.stats-header {
+    font-size: 50px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.stat-line {
+    font-size: 32px;
+    color: #E2EAD2;
+    font-weight: 500;
+}
+
+.stat-num {
+    color: white;
+    font-weight: 800;
+}

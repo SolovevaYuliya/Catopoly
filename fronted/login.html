@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход | Catopoly</title>
+    <!-- Подключаем стили авторизации -->
+    <link rel="stylesheet" href="/static/auth_styles.css">
+</head>
+<body>
+
+    <div class="auth-card">
+        <h1 class="auth-title">Вход</h1>
+
+        <!-- Вывод ошибки, если пароль неверный -->
+        {% if error %}
+        <div class="error-msg" style="display: block;">{{ error }}</div>
+        {% endif %}
+
+        <form action="/login" method="post" class="form-group">
+            <input type="email" name="email" class="auth-input" placeholder="Email" required>
+            <input type="password" name="password" class="auth-input" placeholder="Пароль" required>
+
+            <button type="submit" class="btn-submit btn-green">Войти</button>
+        </form>
+
+        <a href="/register" class="auth-link">Нет аккаунта? Регистрация</a>
+    </div>
+
+</body>
+</html>

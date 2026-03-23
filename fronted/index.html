@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"><title>Catopoly</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/MainMenu.css">
+</head>
+<body>
+<div class="app-container">
+
+  <aside class="sidebar">
+    <div class="logo">CATOPOLY</div>
+    <nav class="nav-menu">
+      <a href="/" class="nav-item active"><i class="fa-solid fa-house"></i> Главная</a>
+      <a href="/api/search" class="nav-item"><i class="fa-solid fa-magnifying-glass"></i> Поиск игры</a>
+      <a href="/api/friends" class="nav-item"><i class="fa-solid fa-user-group"></i> Друзья</a>
+      <a href="/profile" class="nav-item"><i class="fa-solid fa-user"></i> Профиль</a>
+      <a href="/api/fields" class="nav-item"><i class="fa-solid fa-border-all"></i> Игровые поля</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <img src="/static/money.png" class="money-decor" alt="">
+    <img src="/static/hat.png" class="hat-decor" alt="">
+    <header class="top-bar">
+      <div class="capsule-wrapper"><div class="title-capsule">Главная</div></div>
+      <div class="player-section">
+          <div class="player-info">
+              <div class="avatar-box" style="background-image: url('{{ user.avatar_url if user.avatar_url else '' }}');"></div>
+              <span class="player-name">{{ user.username }}</span>
+          </div>
+          <a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket logout-btn"></i></a>
+      </div>
+    </header>
+    <div class="content-body">
+      <div style="max-width: 650px; background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); border-radius: 30px; padding: 30px 40px;">
+        <p style="color: #E2EAD2; font-size: 22px; font-weight: 600; line-height: 1.5; margin: 0;">
+            “ «Катополия» — игра, в которой участники покупают участки, строят дома и отели, собирают аренду и стараются обанкротить соперников. Цель — рационально используя стартовый капитал, не обанкротиться. ”
+        </p>
+      </div>
+      <div style="align-self: flex-end; width: 800px; margin-bottom: 20px;">
+        <h2 style="color: white; font-size: 40px; margin-bottom: 15px; text-shadow: 0 4px 10px rgba(0,0,0,0.5);">Правила игры:</h2>
+        <div style="background: rgba(60,80,60,0.6); backdrop-filter: blur(15px); border-radius: 30px; padding: 35px 45px; color: white; font-size: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.4);">
+          <ul>
+            <li style="margin-bottom: 10px;">Игроки по очереди бросают кубики и делают соответствующее количество ходов на игровом поле.</li>
+            <li style="margin-bottom: 10px;">Встав на поле, игрок либо приобретает актив либо отказывается от сделки. Стоимость актива есть в карточке.</li>
+            <li>Если у игрока не хватает наличных денег на покупку, он может заложить на время свои активы и использовать эти деньги на покупку.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ -->
+  {% if pending_invites %}
+  <div class="floating-notifications">
+      {% for invite, sender_name in pending_invites %}
+      <div class="invite-toast">
+          <div class="toast-header">Новый инвайт!</div>
+          <div class="toast-body">Игрок <b>{{ sender_name }}</b> приглашает тебя в игру #{{ invite.game_id }}</div>
+          <div class="toast-btns">
+              <a href="/accept_invite/{{ invite.id }}" class="btn-toast btn-toast-acc">ПРИНЯТЬ</a>
+              <a href="/decline_invite/{{ invite.id }}" class="btn-toast btn-toast-dec">ОТКЛОНИТЬ</a>
+          </div>
+      </div>
+      {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+<script src="/static/global_sync.js"></script>
+</body>
+</html>

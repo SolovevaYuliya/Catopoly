@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"><title>Игровые поля | Catopoly</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/MainMenu.css">
+</head>
+<body>
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="logo">CATOPOLY</div>
+    <nav class="nav-menu">
+      <a href="/" class="nav-item"><i class="fa-solid fa-house"></i> Главная</a>
+      <a href="/api/search" class="nav-item"><i class="fa-solid fa-magnifying-glass"></i> Поиск игры</a>
+      <a href="/api/friends" class="nav-item"><i class="fa-solid fa-user-group"></i> Друзья</a>
+      <a href="/profile" class="nav-item"><i class="fa-solid fa-user"></i> Профиль</a>
+      <a href="/api/fields" class="nav-item active"><i class="fa-solid fa-border-all"></i> Игровые поля</a>
+    </nav>
+  </aside>
+  <main class="main-content">
+    <header class="top-bar">
+      <div class="capsule-wrapper"><div class="title-capsule">Игровые поля</div></div>
+      <div class="player-section">
+          <div class="player-info">
+              <div class="avatar-box" style="background-image: url('{{ user.avatar_url if user.avatar_url else '' }}');"></div>
+              <span class="player-name">{{ user.username }}</span>
+          </div>
+          <a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket logout-btn"></i></a>
+      </div>
+    </header>
+    <div class="content-body" style="justify-content: flex-start; padding-top: 40px;">
+        <div class="fields-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; width: 100%;">
+            <div class="field-card" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Улица 1 (Светло-коричневая)</div>
+            <div class="field-card" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Улица 2 (Темно-коричневая)</div>
+            <div class="field-card" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Улица 3 (Оливковая)</div>
+            <div class="field-card" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Улица 4 (Черная)</div>
+            <div class="field-card" style="background: #3C4C37; padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Старт</div>
+            <div class="field-card" style="background: #701A1A; padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Тюрьма</div>
+            <div class="field-card" style="background: #EEDC82; padding: 30px; border-radius: 20px; color: #5C1515; text-align: center; font-weight: bold;">Бесплатная парковка</div>
+            <div class="field-card" style="background: #701A1A; padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Отправка в тюрьму</div>
+        </div>
+    </div>
+  </main>
+
+  {% if pending_invites %}
+  <div class="floating-notifications">
+      {% for invite, sender_name in pending_invites %}
+      <div class="invite-toast">
+          <div class="toast-header">Новый инвайт!</div>
+          <div class="toast-body">Игрок <b>{{ sender_name }}</b> приглашает тебя в игру #{{ invite.game_id }}</div>
+          <div class="toast-btns">
+              <a href="/accept_invite/{{ invite.id }}" class="btn-toast btn-toast-acc">ПРИНЯТЬ</a>
+              <a href="/decline_invite/{{ invite.id }}" class="btn-toast btn-toast-dec">ОТКЛОНИТЬ</a>
+          </div>
+      </div>
+      {% endfor %}
+  </div>
+  {% endif %}
+</div>
+<script src="/static/global_sync.js"></script>
+</body>
+</html>

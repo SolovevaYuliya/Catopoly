@@ -1,0 +1,224 @@
+/* --- 1. ОБЩИЕ БЛОКИ И СЕТКА --- */
+.info-glass-box {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 30px;
+    padding: 25px 40px;
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto 40px auto;
+    color: #E2EAD2;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.search-layout {
+    display: flex;
+    gap: 50px;
+    align-items: flex-start;
+}
+
+/* --- 2. ЛЕВАЯ ПАНЕЛЬ (СПИСОК ЛОББИ) --- */
+.lobbies-panel {
+    flex-grow: 1;
+    background-color: #E9F0D8;
+    border-radius: 40px;
+    padding: 40px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    min-height: 500px;
+}
+
+.lobbies-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.lobbies-header h2 {
+    color: #2F3E2E;
+    font-size: 32px;
+    font-weight: 900;
+    margin: 0;
+}
+
+.btn-create-lobby {
+    position: absolute;
+    left: 0;
+    background-color: #EEDC82;
+    color: #5C1515;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-create-lobby:hover { transform: scale(1.05); }
+
+/* --- 3. СТИЛИ ПОЛОСКИ ЛОББИ --- */
+.lobby-row {
+    background-color: #839680;
+    border-radius: 30px;
+    padding: 20px 30px;
+    margin-bottom: 50px; /* Отступ для ников под аватарами */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.lobby-top {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.slots-container {
+    display: flex;
+    gap: 20px;
+    padding-bottom: 15px;
+}
+
+/* СЛОТЫ ИГРОКОВ */
+.player-slot {
+    width: 65px;
+    height: 65px;
+    background-color: #5C1515;
+    border-radius: 12px;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.player-slot.empty {
+    background-color: rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5C1515;
+    font-size: 30px;
+    text-decoration: none;
+}
+
+/* НИКНЕЙМ ПОД СЛОТОМ */
+.slot-name {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 13px;
+    color: #2F3E2E;
+    font-weight: 800;
+    white-space: nowrap;
+    text-shadow: 0 0 4px rgba(255,255,255,0.4);
+}
+
+/* КНОПКИ УПРАВЛЕНИЯ ВЛАДЕЛЬЦА */
+.owner-controls {
+    display: flex;
+    gap: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    min-height: 40px;
+}
+
+.btn-control {
+    text-decoration: none;
+    padding: 10px 25px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 14px;
+    text-transform: uppercase;
+    transition: 0.3s;
+}
+.btn-start { background-color: #3C4C37; color: #E2EAD2; }
+.btn-delete { background-color: #701A1A; color: white; }
+
+/* --- 4. ПРАВАЯ ПАНЕЛЬ (ДРУЗЬЯ) --- */
+.friends-sidebar-right { width: 300px; flex-shrink: 0; }
+.friends-title { color: white; font-size: 28px; font-weight: 800; margin-bottom: 25px; }
+.friend-row { display: flex; align-items: center; gap: 20px; margin-bottom: 25px; }
+.friend-avatar { width: 70px; height: 70px; background-color: #5C1515; border-radius: 15px; flex-shrink: 0; background-size: cover; }
+.friend-name { color: white; font-size: 20px; font-weight: 700; }
+.btn-invite { background-color: #EEDC82; border: none; padding: 5px 15px; border-radius: 15px; font-weight: 800; cursor: pointer; color: #5C1515; }
+
+/* --- 5. МОДАЛЬНОЕ ОКНО --- */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #E9F0D8;
+    padding: 60px;
+    border-radius: 40px;
+    width: 550px;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.6);
+    text-align: center;
+}
+
+.modal-title { color: #2F3E2E; font-size: 48px; font-weight: 900; margin-bottom: 50px; }
+
+.modal-setting {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    font-size: 28px;
+    font-weight: 800;
+    color: #2F3E2E;
+}
+
+.num-input {
+    background: #DDE8D1;
+    border: 2px solid #839680;
+    color: #5C1515;
+    font-size: 32px;
+    font-weight: 900;
+    width: 80px;
+    padding: 10px;
+    border-radius: 15px;
+    text-align: center;
+    outline: none;
+}
+
+/* Переключатель */
+.switch { position: relative; display: inline-block; width: 80px; height: 40px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #5C1515;
+    border-radius: 40px; transition: .4s;
+}
+.slider:before {
+    position: absolute; content: "";
+    height: 32px; width: 32px; left: 4px; bottom: 4px;
+    background-color: white; border-radius: 50%; transition: .4s;
+}
+input:checked + .slider:before { transform: translateX(38px); }
+
+.btn-modal-create {
+    background-color: #3C4C37;
+    color: #E2EAD2;
+    border: none;
+    padding: 20px 60px;
+    border-radius: 25px;
+    font-weight: 900;
+    font-size: 28px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: 0.3s;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+}
+.btn-modal-create:hover { background-color: #2D3A29; transform: scale(1.05); }
