@@ -2,168 +2,396 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>В ИГРЕ | Catopoly</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CATOPOLY | В ИГРЕ</title>
+
+    <!-- Подключение иконок -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
-        body { margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #151F16; color: white; overflow: hidden; height: 100vh; width: 100vw; }
-        .game-layout { display: flex; justify-content: space-between; align-items: stretch; height: 100vh; width: 100vw; padding: 15px; box-sizing: border-box; gap: 20px; }
-
-        /* ЛЕВАЯ ПАНЕЛЬ */
-        .side-left { width: 280px; display: flex; flex-direction: column; gap: 15px; height: 100%; flex-shrink: 0; }
-        .players-list { display: flex; flex-direction: column; gap: 10px; }
-        .player-card { color: #1A261B; padding: 12px; border-radius: 18px; border: 3px solid #3C4C37; display: flex; align-items: center; gap: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: all 0.3s ease; position: relative; }
-
-        .card-1 { background-color: rgba(237, 27, 36, 0.25) !important; border-left: 10px solid #ED1B24 !important; color: #ffcccc; }
-        .card-2 { background-color: rgba(0, 114, 187, 0.25) !important; border-left: 10px solid #0072BB !important; color: #cce6ff; }
-        .card-3 { background-color: rgba(254, 242, 0, 0.25) !important; border-left: 10px solid #FEF200 !important; color: #ffffcc; }
-        .card-4 { background-color: rgba(31, 178, 90, 0.25) !important; border-left: 10px solid #1FB25A !important; color: #ccffdd; }
-        .card-5 { background-color: rgba(247, 148, 29, 0.25) !important; border-left: 10px solid #F7941D !important; color: #ffe6cc; }
-        .card-6 { background-color: rgba(146, 39, 143, 0.25) !important; border-left: 10px solid #92278F !important; color: #f2ccff; }
-
-        .active-turn { transform: scale(1.05); box-shadow: 0 0 20px white; border-color: white !important; filter: brightness(1.3); z-index: 10; }
-        .p-avatar { width: 45px; height: 45px; border-radius: 10px; background-size: cover; background-position: center; border: 2px solid #3C4C37; }
-
-        /* Кнопка сделки на карточке */
-        .trade-btn-trigger {
-            position: absolute; right: 10px; top: 10px; background: #EEDC82; color: #5C1515;
-            border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;
-            display: none; align-items: center; justify-content: center; font-size: 12px;
+        /* =========================================
+           1. БАЗОВЫЕ СТИЛИ И ПЕРЕМЕННЫЕ
+           ========================================= */
+        :root {
+            --bg-main: #151F16;
+            --board-bg: #BFDBAE;
+            --center-bg: #E9F0D8;
+            --accent-red: #701A1A;
+            --accent-green: #3C4C37;
+            --accent-yellow: #EEDC82;
+            --text-dark: #1A261B;
+            --text-light: #E2EAD2;
+            --shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .events-panel { flex-grow: 1; background: rgba(255, 255, 255, 0.05); border: 2px solid #3C4C37; border-radius: 20px; display: flex; flex-direction: column; padding: 15px; overflow: hidden; }
-        .events-title { font-weight: 900; color: #EEDC82; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; border-bottom: 2px solid #3C4C37; padding-bottom: 5px; }
-        #log-content { flex-grow: 1; overflow-y: auto; font-size: 13px; line-height: 1.4; color: #E2EAD2; padding: 5px; }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-main);
+            color: white;
+            overflow: hidden;
+            height: 100vh; width: 100vw;
+        }
 
-        /* СТИЛЬ НИКА В СОБЫТИЯХ */
-        .log-nickname { color: #FFD700; font-weight: 900; text-shadow: 1px 1px 1px rgba(0,0,0,0.5); }
+        .game-layout {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+            height: 100vh;
+            width: 100vw;
+            padding: 15px;
+            box-sizing: border-box;
+            gap: 20px;
+        }
 
-        /* ЦЕНТР */
-        .side-center { flex-grow: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        .board { display: grid; grid-template-columns: 100px repeat(9, 1fr) 100px; grid-template-rows: 100px repeat(9, 1fr) 100px; width: 92vh; height: 92vh; background: #BFDBAE; border: 5px solid #3C4C37; box-shadow: 0 0 50px black; }
-        .center-area { grid-column: 2 / 11; grid-row: 2 / 11; background: #E9F0D8; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; text-align: center; }
+        /* =========================================
+           2. ЛЕВАЯ ПАНЕЛЬ: ИГРОКИ И ЛОГИ
+           ========================================= */
+        .side-left {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 100%;
+            flex-shrink: 0;
+        }
 
-        .cell { border: 1px solid #3C4C37; position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; color: #1A261B; background: #BFDBAE; overflow: hidden; cursor: pointer; }
-        .color-bar { width: 100%; height: 20px; border-bottom: 1px solid #3C4C37; flex-shrink: 0; }
-        .cell-name { font-size: 8px; font-weight: 800; text-transform: uppercase; padding: 5px 2px; flex-grow: 1; display: flex; align-items: center; justify-content: center; }
-        .cell-price { font-size: 10px; font-weight: 900; margin-bottom: 10px; }
+        .players-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-        .owned-by-1 { background: rgba(237, 27, 36, 0.4) !important; }
-        .owned-by-2 { background: rgba(0, 114, 187, 0.4) !important; }
-        .owned-by-3 { background: rgba(254, 242, 0, 0.4) !important; }
-        .owned-by-4 { background: rgba(31, 178, 90, 0.4) !important; }
-        .owned-by-5 { background: rgba(247, 148, 29, 0.4) !important; }
-        .owned-by-6 { background: rgba(146, 39, 143, 0.4) !important; }
+        .player-card {
+            color: white;
+            padding: 14px;
+            border-radius: 20px;
+            border: 3px solid var(--accent-green);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Подсветка текущего хода */
+        .active-turn {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+            border-color: white !important;
+            filter: brightness(1.2);
+            z-index: 10;
+        }
+
+        /* Цвета карт игроков */
+        .card-1 { border-left: 10px solid #ED1B24 !important; background: rgba(237, 27, 36, 0.15); }
+        .card-2 { border-left: 10px solid #0072BB !important; background: rgba(0, 114, 187, 0.15); }
+        .card-3 { border-left: 10px solid #FEF200 !important; background: rgba(254, 242, 0, 0.15); }
+        .card-4 { border-left: 10px solid #1FB25A !important; background: rgba(31, 178, 90, 0.15); }
+        .card-5 { border-left: 10px solid #F7941D !important; background: rgba(247, 148, 29, 0.15); }
+        .card-6 { border-left: 10px solid #92278F !important; background: rgba(146, 39, 143, 0.15); }
+
+        .p-avatar {
+            width: 50px; height: 50px;
+            border-radius: 12px;
+            background-size: cover;
+            background-position: center;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        .p-info b { font-size: 15px; display: block; margin-bottom: 2px; }
+        .p-info .money-val { font-size: 18px; font-weight: 900; color: var(--accent-yellow); }
+
+        .trade-btn-trigger {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: var(--accent-yellow); color: #5C1515;
+            border: none; border-radius: 50%; width: 30px; height: 30px;
+            cursor: pointer; display: none; align-items: center; justify-content: center;
+            font-size: 14px; transition: 0.2s;
+        }
+        .trade-btn-trigger:hover { transform: translateY(-50%) scale(1.1); }
+
+        /* Логи событий */
+        .events-panel {
+            flex-grow: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--accent-green);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            overflow: hidden;
+        }
+        .events-title {
+            font-weight: 900; color: var(--accent-yellow);
+            font-size: 14px; margin-bottom: 10px;
+            text-transform: uppercase; border-bottom: 2px solid var(--accent-green);
+            padding-bottom: 5px;
+        }
+        #log-content {
+            flex-grow: 1; overflow-y: auto;
+            font-size: 13px; line-height: 1.5;
+            color: var(--text-light); padding-right: 5px;
+        }
+        #log-content::-webkit-scrollbar { width: 4px; }
+        #log-content::-webkit-scrollbar-thumb { background: var(--accent-green); border-radius: 10px; }
+
+        .log-nickname { color: #FFD700; font-weight: 900; }
+
+        /* =========================================
+           3. ЦЕНТРАЛЬНАЯ ЧАСТЬ: ИГРОВОЕ ПОЛЕ
+           ========================================= */
+        .side-center {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: 100px repeat(9, 1fr) 100px;
+            grid-template-rows: 100px repeat(9, 1fr) 100px;
+            width: 94vh; height: 94vh;
+            background: var(--board-bg);
+            border: 6px solid var(--accent-green);
+            box-shadow: 0 0 60px black;
+        }
+
+        .center-area {
+            grid-column: 2 / 11;
+            grid-row: 2 / 11;
+            background: var(--center-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .cell {
+            border: 1px solid var(--accent-green);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            color: var(--text-dark);
+            background: var(--board-bg);
+            overflow: hidden;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .cell:hover { background: #ceddbb; }
+
+        /* Логика цветовых полосок по сторонам */
+        .color-bar { width: 100%; height: 22px; flex-shrink: 0; box-sizing: border-box; }
+
+        /* Позиционирование полоски в зависимости от стороны */
+        .bottom .color-bar { border-bottom: 2px solid var(--accent-green); }
+        .top .color-bar { order: 2; border-top: 2px solid var(--accent-green); }
+        .left .color-bar {
+            position: absolute; right: 0; height: 100%; width: 22px;
+            border-left: 2px solid var(--accent-green);
+        }
+        .right .color-bar {
+            position: absolute; left: 0; height: 100%; width: 22px;
+            border-right: 2px solid var(--accent-green);
+        }
+
+        .cell-name {
+            font-size: 9px; font-weight: 800;
+            text-transform: uppercase; padding: 6px 4px;
+            flex-grow: 1; display: flex; align-items: center; justify-content: center;
+        }
+        .cell-price { font-size: 11px; font-weight: 900; margin-bottom: 8px; }
+
+        /* Цвета групп */
+        .brown { background: #955436 !important; } .light-blue { background: #AAE0FA !important; }
+        .pink { background: #D93A96 !important; } .orange { background: #F7941D !important; }
+        .red { background: #ED1B24 !important; } .yellow { background: #FEF200 !important; }
+        .green { background: #1FB25A !important; } .dark-blue { background: #0072BB !important; }
+
+        /* Владение клетками (непрозрачные бордеры) */
+        .owned-by-1 { box-shadow: inset 0 0 0 6px #ED1B24; }
+        .owned-by-2 { box-shadow: inset 0 0 0 6px #0072BB; }
+        .owned-by-3 { box-shadow: inset 0 0 0 6px #FEF200; }
+        .owned-by-4 { box-shadow: inset 0 0 0 6px #1FB25A; }
+        .owned-by-5 { box-shadow: inset 0 0 0 6px #F7941D; }
+        .owned-by-6 { box-shadow: inset 0 0 0 6px #92278F; }
 
         .mortgage-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 15;
-            display: flex; align-items: center; justify-content: center; pointer-events: none;
+            background: rgba(0,0,0,0.5); z-index: 15;
+            display: flex; align-items: center; justify-content: center;
         }
         .mortgage-stamp {
-            color: #FF3B30; font-weight: 900; font-size: 12px;
+            color: #FF3B30; font-weight: 900; font-size: 14px;
             text-transform: uppercase; transform: rotate(-30deg);
-            border: 2px solid #FF3B30; padding: 1px 4px;
-            background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 5px black;
+            border: 3px solid #FF3B30; padding: 2px 6px;
+            background: white; box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
-        .fish-container { position: absolute; top: 4px; width: 100%; display: flex; justify-content: center; gap: 2px; pointer-events: none; z-index: 5; }
-        .fish-icon { font-size: 11px; color: #0072BB; text-shadow: 0 0 2px white; transition: all 0.3s ease; }
-        .big-fish { font-size: 16px !important; color: #FFD700 !important; text-shadow: 0 0 5px #F7941D, 0 0 10px white !important; animation: pulse-fish 2s infinite ease-in-out; }
+        /* Рыбки (Улучшения) */
+        .fish-container {
+            position: absolute; top: 3px; width: 100%;
+            display: flex; justify-content: center; gap: 2px;
+            pointer-events: none; z-index: 5;
+        }
+        /* Для левой и правой сторон позиция рыбок меняется */
+        .left .fish-container, .right .fish-container { top: 50%; transform: translateY(-50%); flex-direction: column; width: 20px; }
+        .left .fish-container { right: 25px; } .right .fish-container { left: 25px; }
 
-        /* ПРАВАЯ ПАНЕЛЬ (ЧАТ) */
-        .side-right { width: 320px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .chat-panel { height: 100%; background: #E9F0D8; border-radius: 30px; border: 4px solid #3C4C37; display: flex; flex-direction: column; color: #1A261B; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #chat-messages { flex-grow: 1; overflow-y: auto; padding: 15px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
-        /* ОБЫЧНЫЙ ТЕКСТ В ЧАТЕ */
-        #chat-messages div { padding: 2px 0; border: none; background: none; word-wrap: break-word; }
+        .fish-icon { font-size: 11px; color: #0072BB; text-shadow: 0 0 2px white; }
+        .big-fish { font-size: 18px !important; color: #FFD700 !important; animation: pulse 1.5s infinite; }
 
-        /* КАРТОЧКА ПОЛЯ */
-        .property-card-popup { display: none; position: fixed; width: 220px; background: #E9F0D8; border: 3px solid #3C4C37; border-radius: 12px; z-index: 10000; box-shadow: 0 10px 40px rgba(0,0,0,0.7); color: #1A261B; overflow: hidden; }
-        .prop-card-header { height: 35px; border-bottom: 2px solid #3C4C37; display: flex; align-items: center; justify-content: center; color: white; text-shadow: 1px 1px 1px black; font-size: 12px; text-transform: uppercase; font-weight: 900; }
-        .prop-card-body { padding: 10px; }
-        .prop-card-name { text-align: center; font-size: 12px; margin-bottom: 8px; border-bottom: 1px solid #3C4C37; padding-bottom: 5px; font-weight: 900; }
-        .rent-line { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; padding: 2px 5px; }
-        .rent-line.active { background: #BFDBAE; border-radius: 5px; font-weight: 900; color: #0072BB; }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
 
-        .upgrade-btn-area { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-        .btn-up { background: #1FB25A; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 900; }
-        .btn-mortgage { background: #F7941D; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 900; }
-        .btn-sell { background: #0072BB; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 900; }
-        .btn-close { background: #ED1B24; color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: 900; }
+        /* =========================================
+           4. ИНТЕРФЕЙС УПРАВЛЕНИЯ (КУБИКИ И КНОПКИ)
+           ========================================= */
+        .dice-area { display: flex; gap: 20px; margin-bottom: 25px; perspective: 500px; }
+        .die { font-size: 80px; color: var(--accent-red); filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); }
+        .shaking { animation: shake 0.15s infinite; }
 
-        /* ТОРГОВЛЯ (ОБНОВЛЕННЫЕ СТИЛИ - ЗЕЛЕНЫЙ ФОН) */
+        @keyframes shake {
+            0% { transform: translate(2px, 2px) rotate(0deg); }
+            25% { transform: translate(-2px, -2px) rotate(-5deg); }
+            50% { transform: translate(2px, -2px) rotate(5deg); }
+            75% { transform: translate(-2px, 2px) rotate(-2deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .dice-btn {
+            background: var(--accent-green); color: white;
+            padding: 20px 45px; border-radius: 25px;
+            border: none; font-weight: 900; cursor: pointer;
+            font-size: 26px; transition: 0.3s;
+            box-shadow: 0 8px 0 #232d21;
+        }
+        .dice-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #232d21; }
+        .dice-btn:disabled { background: #555; opacity: 0.6; cursor: not-allowed; box-shadow: none; transform: translateY(4px); }
+
+        /* Фишки игроков */
+        .tokens-container {
+            position: absolute; bottom: 8px;
+            display: flex; gap: 4px; z-index: 50;
+            justify-content: center; width: 100%;
+            height: 24px; flex-wrap: wrap;
+        }
+        .player-token {
+            width: 18px; height: 18px;
+            border-radius: 50%; border: 2px solid white;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.6);
+        }
+        .token-1 { background: #ED1B24; } .token-2 { background: #0072BB; }
+        .token-3 { background: #FEF200; } .token-4 { background: #1FB25A; }
+        .token-5 { background: #F7941D; } .token-6 { background: #92278F; }
+
+        .walking { transform: scale(1.5) translateY(-10px); z-index: 100; transition: all 0.2s linear; }
+
+        /* =========================================
+           5. МОДАЛЬНЫЕ ОКНА И ЧАТ
+           ========================================= */
+        .side-right { width: 340px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .chat-panel {
+            height: 100%; background: var(--center-bg);
+            border-radius: 35px; border: 5px solid var(--accent-green);
+            display: flex; flex-direction: column; color: var(--text-dark);
+            overflow: hidden; box-shadow: var(--shadow);
+        }
+        #chat-messages { flex-grow: 1; overflow-y: auto; padding: 18px; font-size: 15px; display: flex; flex-direction: column; gap: 6px; }
+        #chat-messages b { color: var(--accent-red); }
+
+        .chat-input-area { padding: 15px; background: rgba(0,0,0,0.03); border-top: 2px solid var(--accent-green); }
+        #chat-input {
+            width: 100%; padding: 12px 15px;
+            border-radius: 15px; border: 2px solid var(--accent-green);
+            outline: none; box-sizing: border-box; font-size: 14px;
+        }
+
+        /* Поп-ап карточки */
+        .property-card-popup {
+            display: none; position: fixed; width: 240px;
+            background: var(--center-bg); border: 4px solid var(--accent-green);
+            border-radius: 20px; z-index: 10000; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            color: var(--text-dark); overflow: hidden;
+        }
+        .prop-card-header {
+            height: 45px; display: flex; align-items: center;
+            justify-content: center; color: white;
+            text-shadow: 1px 1px 2px black; font-size: 14px;
+            text-transform: uppercase; font-weight: 900;
+        }
+        .prop-card-body { padding: 15px; }
+        .rent-line { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 6px; margin-bottom: 2px; }
+        .rent-line.active { background: #BFDBAE; border-radius: 8px; font-weight: 900; color: #0072BB; }
+
         .trade-modal {
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 620px; background: #151F16; border: 4px solid #3C4C37; border-radius: 35px;
-            z-index: 20000; padding: 30px; color: #E2EAD2; box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            width: 650px; background: var(--bg-main); border: 5px solid var(--accent-green);
+            border-radius: 40px; z-index: 20000; padding: 35px; color: var(--text-light);
+            box-shadow: 0 0 100px rgba(0,0,0,0.9);
         }
-        .trade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-        .trade-side { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
-        .trade-side h4 { margin: 0 0 15px 0; border-bottom: 2px solid #3C4C37; color: #EEDC82; font-weight: 900; }
-        .prop-list-trade { height: 160px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 8px; font-size: 13px; border: 1px solid #3C4C37; color: white; }
-        .trade-input { width: 100%; padding: 12px; margin-top: 15px; border-radius: 12px; border: 1px solid #3C4C37; background: #1A261B; color: white; outline: none; box-sizing: border-box; }
-        #trade-offer-details { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; margin-bottom: 25px; font-size: 16px; color: white; border: 1px solid #3C4C37; line-height: 1.5; }
+        .trade-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin: 20px 0; }
+        .trade-side { background: rgba(255,255,255,0.03); padding: 20px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); }
+        .prop-list-trade { height: 180px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 15px; padding: 10px; border: 1px solid var(--accent-green); }
 
-        /* КУБИКИ */
-        .dice-area { display: flex; gap: 20px; margin-bottom: 20px; }
-        .die { font-size: 70px; color: #701A1A; }
-        .shaking { animation: dice-shake 0.1s infinite; }
-        @keyframes dice-shake { 0% { transform: translate(2px, 1px) rotate(0deg); } 50% { transform: translate(-2px, -1px) rotate(-5deg); } 100% { transform: translate(1px, 1px) rotate(5deg); } }
-        .dice-btn { background: #3C4C37; color: white; padding: 18px 35px; border-radius: 20px; border: none; font-weight: 900; cursor: pointer; font-size: 24px; }
-
-        /* ФИШКИ */
-        .tokens-container { position: absolute; bottom: 4px; display: flex; gap: 3px; z-index: 50; justify-content: center; width: 100%; height: 20px; flex-wrap: wrap; }
-        .player-token { width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px black; }
-        .token-1 { background-color: #ED1B24; }
-        .token-2 { background-color: #0072BB; }
-        .token-3 { background-color: #FEF200; }
-        .token-4 { background-color: #1FB25A; }
-        .token-5 { background-color: #F7941D; }
-        .token-6 { background-color: #92278F; }
-        .walking { transform: scale(1.3) translateY(-5px); z-index: 100; transition: all 0.25s linear; }
-
-        /* ФИНАЛ */
+        /* Экраны финала */
         .final-screen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 999999; background: rgba(10, 20, 10, 0.95); backdrop-filter: blur(20px);
+            z-index: 999999; background: rgba(10, 20, 10, 0.98); backdrop-filter: blur(25px);
             flex-direction: column; align-items: center; justify-content: center; text-align: center;
         }
-        .final-avatar { width: 220px; height: 220px; border-radius: 50%; border: 12px solid #FEF200; object-fit: cover; }
-        .final-title { font-size: 60px; font-weight: 900; text-transform: uppercase; margin: 20px 0; }
-        .final-btn { background: #1FB25A; color: white; padding: 15px 40px; border-radius: 50px; text-decoration: none; font-weight: 900; font-size: 24px; }
-        .lose-theme { color: #ED1B24; } .win-theme { color: #FEF200; }
-
-        /* ЦВЕТОВЫЕ ГРУППЫ */
-        .brown { background: #955436; } .light-blue { background: #AAE0FA; } .pink { background: #D93A96; } .orange { background: #F7941D; }
-        .red { background: #ED1B24; } .yellow { background: #FEF200; } .green { background: #1FB25A; } .dark-blue { background: #0072BB; }
+        .final-avatar { width: 240px; height: 240px; border-radius: 50%; border: 15px solid var(--accent-yellow); object-fit: cover; box-shadow: 0 0 50px var(--accent-yellow); }
+        .final-title { font-size: 70px; font-weight: 900; margin: 30px 0; }
+        .final-btn { background: #1FB25A; color: white; padding: 20px 60px; border-radius: 100px; text-decoration: none; font-weight: 900; font-size: 28px; transition: 0.3s; }
+        .final-btn:hover { transform: scale(1.1); background: #26d66c; }
     </style>
 </head>
 <body>
 
 <div class="game-layout">
+
     <!-- ЛЕВАЯ ПАНЕЛЬ -->
     <div class="side-left">
         <div class="players-list">
             {% for u, p in players_list %}
             <div class="player-card card-{{ p.turn_order }}" id="card-{{ p.turn_order }}">
                 <div class="p-avatar" style="background-image: url('{{ u.avatar_url if u.avatar_url else '/static/default_cat.png' }}');"></div>
-                <div><b>{{ u.username }}</b><br><span id="money-{{ p.turn_order }}" style="font-weight:900;">${{ p.balance|int }}</span></div>
+                <div class="p-info">
+                    <b>{{ u.username }}</b>
+                    <div class="money-val" id="money-{{ p.turn_order }}">${{ p.balance|int }}</div>
+                </div>
                 {% if u.id != user.id %}
-                <button class="trade-btn-trigger" id="trade-with-{{ p.turn_order }}" onclick="openTradeModal({{ p.turn_order }})">
+                <button class="trade-btn-trigger" id="trade-with-{{ p.turn_order }}" onclick="openTradeModal({{ p.turn_order }})" title="Предложить сделку">
                     <i class="fa-solid fa-handshake"></i>
                 </button>
                 {% endif %}
             </div>
             {% endfor %}
         </div>
+
         <div class="events-panel">
-            <div class="events-title">История Событий</div>
+            <div class="events-title"><i class="fa-solid fa-clock-rotate-left"></i> История Кошачьих Дел</div>
             <div id="log-content"></div>
         </div>
-        <button onclick="handleSurrender()" style="background:#701A1A; color:white; padding:12px; border-radius:12px; font-weight:900; border:none; cursor:pointer;">СДАТЬСЯ</button>
+
+        <button onclick="handleSurrender()" style="background: var(--accent-red); color: white; padding: 15px; border-radius: 18px; font-weight: 900; border: none; cursor: pointer; transition: 0.3s; box-shadow: 0 5px 0 #4a1111;">
+            <i class="fa-solid fa-door-open"></i> СДАТЬСЯ (ПОКИНУТЬ КОРОБКУ)
+        </button>
     </div>
 
-    <!-- ЦЕНТР (ПОЛЕ) -->
+    <!-- ПОЛЕ -->
     <div class="side-center">
         <div class="board">
             <div class="center-area">
@@ -171,25 +399,36 @@
                     <i class="die fa-solid fa-dice-one" id="die-1"></i>
                     <i class="die fa-solid fa-dice-six" id="die-2"></i>
                 </div>
-                <button class="dice-btn" id="roll-btn" onclick="handleRoll()">БРОСИТЬ КУБИКИ</button>
-                <button id="pay-jail-btn" style="display:none; margin-top:10px; background:#F7941D; color:white; border:none; padding:10px 20px; border-radius:15px; font-weight:900; cursor:pointer;" onclick="handlePayJail()">ВЫЙТИ ИЗ КАРАНТИНА ($50)</button>
 
-                <div id="buy-action-panel" style="display:none; flex-direction:column; gap:10px; align-items:center; background:#3C4C37; padding:20px; border-radius:20px; color:white;">
-                    <div id="buy-cell-name" style="font-weight:900; font-size:18px;">Название</div>
-                    <div>Цена: <b id="buy-cell-price">0</b>$</div>
-                    <div style="display:flex; gap:10px;">
-                        <button style="background:#1FB25A; color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:900; cursor:pointer;" onclick="confirmBuy()">КУПИТЬ</button>
-                        <button style="background:#ED1B24; color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:900; cursor:pointer;" onclick="skipBuy()">ПРОПУСТИТЬ</button>
+                <button class="dice-btn" id="roll-btn" onclick="handleRoll()">БРОСИТЬ КУБИКИ</button>
+
+                <button id="pay-jail-btn" style="display:none; margin-top:15px; background: #F7941D; color: white; border: none; padding: 12px 25px; border-radius: 15px; font-weight: 900; cursor: pointer;" onclick="handlePayJail()">ВЫКУПИТЬСЯ ИЗ КАРАНТИНА ($50)</button>
+
+                <!-- ПАНЕЛЬ ПОКУПКИ -->
+                <div id="buy-action-panel" style="display:none; flex-direction:column; gap:12px; align-items:center; background: var(--accent-green); padding: 25px; border-radius: 30px; color: white; border: 3px solid var(--accent-yellow); box-shadow: var(--shadow);">
+                    <div id="buy-cell-name" style="font-weight:900; font-size:22px; text-transform:uppercase;">Название</div>
+                    <div style="font-size: 18px;">Стоимость: <b id="buy-cell-price" style="color:var(--accent-yellow);">0</b>$</div>
+                    <div style="display:flex; gap:12px; margin-top:10px;">
+                        <button style="background:#1FB25A; color:white; border:none; padding:12px 25px; border-radius:15px; font-weight:900; cursor:pointer;" onclick="confirmBuy()">КУПИТЬ</button>
+                        <button style="background:var(--accent-red); color:white; border:none; padding:12px 25px; border-radius:15px; font-weight:900; cursor:pointer;" onclick="skipBuy()">ПРОПУСТИТЬ</button>
                     </div>
                 </div>
-                <p id="turn-indicator" style="font-weight: 900; color: #3C4C37; margin-top:15px;"></p>
+
+                <p id="turn-indicator" style="font-weight: 900; color: var(--accent-green); font-size: 20px; margin-top:20px; letter-spacing: 2px;"></p>
             </div>
+
             {% for cell in cells %}
                 {% set idx = loop.index0 %}
-                {% if idx <= 10 %}{% set r, c = 11, 11-idx %}{% elif idx <= 20 %}{% set r, c = 11-(idx-10), 1 %}{% elif idx <= 30 %}{% set r, c = 1, 1+(idx-20) %}{% else %}{% set r, c = 1+(idx-30), 11 %}{% endif %}
-                <div class="cell" id="cell-{{ idx }}" style="grid-row: {{ r }}; grid-column: {{ c }};" onclick="showCellInfo(event, {{ cell.id }})">
+                {# Определяем координаты и сторону #}
+                {% if idx <= 10 %}{% set r, c, side = 11, 11-idx, "bottom" %}
+                {% elif idx <= 20 %}{% set r, c, side = 11-(idx-10), 1, "left" %}
+                {% elif idx <= 30 %}{% set r, c, side = 1, 1+(idx-20), "top" %}
+                {% else %}{% set r, c, side = 1+(idx-30), 11, "right" %}{% endif %}
+
+                <div class="cell {{ side }}" id="cell-{{ idx }}" style="grid-row: {{ r }}; grid-column: {{ c }};" onclick="showCellInfo(event, {{ cell.id }})">
                     {% if cell.color_group %}
-                        <div class="color-bar {{ cell.color_group }}"></div>
+                        {# Важно: .lower() исправляет проблему невидимых цветов #}
+                        <div class="color-bar {{ cell.color_group.lower() }}"></div>
                     {% endif %}
                     <div class="fish-container" id="fish-{{ cell.id }}"></div>
                     <span class="cell-name">{{ cell.name }}</span>
@@ -200,91 +439,92 @@
         </div>
     </div>
 
-    <!-- ПРАВАЯ ПАНЕЛЬ -->
+    <!-- ЧАТ -->
     <div class="side-right">
         <div class="chat-panel">
-            <div style="background:#3C4C37; color:white; padding:15px; text-align:center; font-weight:900;">ЧАТ ИГРЫ</div>
+            <div style="background: var(--accent-green); color: white; padding: 20px; text-align: center; font-weight: 900; font-size: 18px;">
+                <i class="fa-solid fa-comments"></i> ЧАТ ИГРЫ
+            </div>
             <div id="chat-messages"></div>
-            <div style="padding:15px; border-top:2px solid #3C4C37;">
-                <input type="text" id="chat-input" placeholder="Введите сообщение" onkeydown="if(event.key==='Enter') sendMessage()" style="width:100%; padding:10px; border-radius:12px; border:1px solid #3C4C37; outline:none; box-sizing: border-box;">
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Напишите котикам..." onkeydown="if(event.key==='Enter') sendMessage()">
             </div>
         </div>
     </div>
 </div>
 
-<!-- ОКНО ИНФОРМАЦИИ/ПРОКАЧКИ -->
+<!-- ОКНО ПРОКАЧКИ -->
 <div id="upgrade-panel" class="property-card-popup" onclick="event.stopPropagation()">
     <div id="prop-header" class="prop-card-header">ИНФОРМАЦИЯ</div>
     <div class="prop-card-body">
-        <div id="prop-name" class="prop-card-name">Поле</div>
+        <div id="prop-name" class="prop-card-name" style="text-align:center; font-weight:900; margin-bottom:10px; border-bottom:1px solid #ccc;">Поле</div>
         <div id="rent-info-area">
             <div class="rent-line" id="rent-0"><span>База:</span> <span class="val">$0</span></div>
             <div class="rent-line" id="rent-1"><span>1 🐟:</span> <span class="val">$0</span></div>
             <div class="rent-line" id="rent-2"><span>2 🐟:</span> <span class="val">$0</span></div>
             <div class="rent-line" id="rent-3"><span>3 🐟:</span> <span class="val">$0</span></div>
             <div class="rent-line" id="rent-4"><span>4 🐟:</span> <span class="val">$0</span></div>
-            <div class="rent-line" id="rent-5"><span>Макс:</span> <span class="val">$0</span></div>
+            <div class="rent-line" id="rent-5"><span>Отель:</span> <span class="val">$0</span></div>
         </div>
-        <div id="mortgage-info" style="font-size: 10px; text-align: center; color: #701A1A; font-weight: bold; margin-top: 5px;"></div>
-        <div id="upgrade-cost-info" style="font-size:10px; text-align:center; margin-top:5px; font-weight:bold;"></div>
+        <div id="mortgage-info" style="font-size: 11px; text-align: center; color: var(--accent-red); font-weight: 900; margin-top: 8px;"></div>
+        <div id="upgrade-cost-info" style="font-size:11px; text-align:center; margin-top:5px; opacity: 0.8;"></div>
     </div>
-    <div class="upgrade-btn-area" id="action-buttons" style="display:none;">
-        <button id="main-upgrade-btn" class="btn-up" onclick="confirmUpgrade()">КУПИТЬ РЫБКУ</button>
-        <button id="sell-fish-btn" class="btn-sell" onclick="confirmSellFish()">ПРОДАТЬ РЫБКУ</button>
-        <button id="mortgage-btn" class="btn-mortgage" onclick="toggleMortgage()">ЗАЛОЖИТЬ</button>
+    <div class="upgrade-btn-area" id="action-buttons" style="display:none; padding:15px; flex-direction:column; gap:8px;">
+        <button id="main-upgrade-btn" class="btn-up" onclick="confirmUpgrade()" style="background:#1FB25A; color:white; border:none; padding:10px; border-radius:10px; font-weight:900; cursor:pointer;">КУПИТЬ РЫБКУ</button>
+        <button id="sell-fish-btn" class="btn-sell" onclick="confirmSellFish()" style="background:#0072BB; color:white; border:none; padding:10px; border-radius:10px; font-weight:900; cursor:pointer;">ПРОДАТЬ РЫБКУ</button>
+        <button id="mortgage-btn" class="btn-mortgage" onclick="toggleMortgage()" style="background:#F7941D; color:white; border:none; padding:10px; border-radius:10px; font-weight:900; cursor:pointer;">ЗАЛОЖИТЬ</button>
     </div>
-    <div style="padding: 10px;"><button class="btn-close" onclick="hideUpgrade()">ЗАКРЫТЬ</button></div>
+    <div style="padding: 0 15px 15px 15px;"><button onclick="hideUpgrade()" style="width:100%; background:#777; color:white; border:none; padding:8px; border-radius:10px; font-weight:900; cursor:pointer;">ЗАКРЫТЬ</button></div>
 </div>
 
-<!-- МОДАЛКА ТОРГОВЛИ (ОТПРАВКА) -->
+<!-- ТОРГОВЛЯ -->
 <div id="trade-modal" class="trade-modal">
-    <h2 style="text-align:center; margin-top:0; color:#EEDC82; font-weight:900;">ПРЕДЛОЖИТЬ СДЕЛКУ</h2>
+    <h2 style="text-align:center; margin-top:0; color:var(--accent-yellow); font-weight:900;">МЯУ-СДЕЛКА</h2>
     <div class="trade-grid">
         <div class="trade-side">
-            <h4>ВЫ ОТДАЕТЕ:</h4>
+            <h4 style="margin:0 0 10px 0; color:var(--accent-yellow);">ВЫ ОТДАЕТЕ:</h4>
             <div class="prop-list-trade" id="my-props-trade"></div>
-            <input type="number" id="offer-money" class="trade-input" placeholder="Денег..." value="0">
+            <input type="number" id="offer-money" style="width:100%; margin-top:10px; padding:10px; border-radius:10px; border:none;" placeholder="Сумма $..." value="0">
         </div>
         <div class="trade-side">
-            <h4 id="trade-target-name">ОНИ ОТДАЮТ:</h4>
+            <h4 id="trade-target-name" style="margin:0 0 10px 0; color:var(--accent-yellow);">ОНИ ОТДАЮТ:</h4>
             <div class="prop-list-trade" id="their-props-trade"></div>
-            <input type="number" id="request-money" class="trade-input" placeholder="Денег..." value="0">
+            <input type="number" id="request-money" style="width:100%; margin-top:10px; padding:10px; border-radius:10px; border:none;" placeholder="Сумма $..." value="0">
         </div>
     </div>
-    <div style="display:flex; gap:10px; margin-top:25px;">
-        <button class="btn-up" style="flex:1" onclick="sendTrade()">ОТПРАВИТЬ</button>
-        <button class="btn-close" style="flex:1" onclick="closeTrade()">ОТМЕНА</button>
+    <div style="display:flex; gap:15px; margin-top:20px;">
+        <button onclick="sendTrade()" style="flex:1; background:#1FB25A; color:white; padding:15px; border-radius:15px; border:none; font-weight:900; cursor:pointer;">ОТПРАВИТЬ</button>
+        <button onclick="closeTrade()" style="flex:1; background:#777; color:white; padding:15px; border-radius:15px; border:none; font-weight:900; cursor:pointer;">ОТМЕНА</button>
     </div>
 </div>
 
-<!-- МОДАЛКА ТОРГОВЛИ (ПОЛУЧЕНИЕ) -->
 <div id="receive-trade-modal" class="trade-modal">
-    <h2 style="text-align:center; margin-top:0; color:#EEDC82; font-weight:900;">ВАМ ПРЕДЛОЖИЛИ СДЕЛКУ!</h2>
-    <div id="trade-offer-details">
-        <!-- Сюда вставим детали сделки через JS -->
-    </div>
-    <div style="display:flex; gap:10px;">
-        <button class="btn-up" style="flex:1" id="accept-trade-btn">ПРИНЯТЬ</button>
-        <button class="btn-close" style="flex:1" id="decline-trade-btn">ОТКЛОНИТЬ</button>
+    <h2 style="text-align:center; margin-top:0; color:var(--accent-yellow);">ВАМ ПРЕДЛОЖИЛИ ОБМЕН!</h2>
+    <div id="trade-offer-details" style="background:rgba(255,255,255,0.05); padding:20px; border-radius:20px; margin:20px 0; font-size:16px; line-height:1.6;"></div>
+    <div style="display:flex; gap:15px;">
+        <button id="accept-trade-btn" style="flex:1; background:#1FB25A; color:white; padding:15px; border-radius:15px; border:none; font-weight:900; cursor:pointer;">ПРИНЯТЬ</button>
+        <button id="decline-trade-btn" style="flex:1; background:var(--accent-red); color:white; padding:15px; border-radius:15px; border:none; font-weight:900; cursor:pointer;">ОТКЛОНИТЬ</button>
     </div>
 </div>
 
-<!-- ЭКРАНЫ ФИНАЛА -->
-<div id="win-screen" class="final-screen win-theme">
+<div id="win-screen" class="final-screen">
     <img id="win-avatar" src="" class="final-avatar">
-    <div class="final-title">МЯУ-ПОБЕДА!</div>
-    <div id="win-msg" class="final-msg"></div>
-    <a href="/api/search" class="final-btn">В ЛОББИ</a>
+    <div class="final-title" style="color:var(--accent-yellow);">МЯУ-ПОБЕДА!</div>
+    <div id="win-msg" style="font-size:24px; margin-bottom:40px;"></div>
+    <a href="/api/search" class="final-btn">ВЕРНУТЬСЯ В ЛОББИ</a>
 </div>
 
-<div id="lose-screen" class="final-screen lose-theme">
+<div id="lose-screen" class="final-screen">
     <img id="lose-avatar" src="" class="final-avatar">
-    <div class="final-title">ТЫ ОБАНКРОТИЛСЯ...</div>
-    <div id="lose-msg" class="final-msg"></div>
-    <a href="/api/search" class="final-btn">В ЛОББИ</a>
+    <div class="final-title" style="color:var(--accent-red);">ТЫ ОБАНКРОТИЛСЯ...</div>
+    <div id="lose-msg" style="font-size:24px; margin-bottom:40px;"></div>
+    <a href="/api/search" class="final-btn">ВЕРНУТЬСЯ В ЛОББИ</a>
 </div>
 
 <script>
+    /* =========================================
+       6. ЛОГИКА ИГРЫ (JAVASCRIPT)
+       ========================================= */
     const gameId = {{ game.id }};
     const myOrder = parseInt("{% for u, p in players_list %}{% if u.id == user.id %}{{ p.turn_order }}{% endif %}{% endfor %}") || 0;
     const playerNames = [{% for u, p in players_list %}"{{ u.username }}",{% endfor %}];
@@ -294,12 +534,14 @@
     let globalFishLevels = {}, globalMortgageData = {}, globalOwnerships = {}, hasUpgradedThisTurn = false;
     let tradeTargetDatabaseId = null;
 
+    // Инициализация позиций
     {% for u, p in players_list %} playerPositions[{{ p.turn_order }}] = {{ p.position }}; {% endfor %}
 
     const cellDataMap = {
         {% for cell in cells %}
         "{{ cell.id }}": {
-            id: {{ cell.id }}, name: "{{ cell.name }}", color: "{{ cell.color_group }}",
+            id: {{ cell.id }}, name: "{{ cell.name }}",
+            color: "{{ (cell.color_group or '').lower() }}",
             price: {{ cell.purchase_price or 0 }}, type: "{{ cell.type }}",
             rent0: {{ cell.rent_base or 0 }}
         },
@@ -323,25 +565,13 @@
     }
 
     async function handleSurrender() {
-        if (!confirm("Ты уверен, что хочешь сдаться? Все твои поля пропадут!")) return;
+        if (!confirm("Ты точно хочешь сдаться? Твои владения заберет приют!")) return;
+        gameEnded = true; // Срочно ставим флаг, чтобы syncGame не перебил редирект
 
         try {
-            const response = await fetch(`/api/surrender/${gameId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                // Если сервер подтвердил удаление, уходим в поиск
-                window.location.href = '/api/search';
-            } else {
-                alert("Ошибка при сдаче: " + (result.error || "неизвестно"));
-            }
+            const response = await fetch(`/api/surrender/${gameId}`, { method: 'POST' });
+            window.location.href = '/api/search';
         } catch (e) {
-            console.error("Ошибка сети:", e);
-            // Если сеть легла, но мы хотим выйти — просто редиректим
             window.location.href = '/api/search';
         }
     }
@@ -349,23 +579,27 @@
     async function handleRoll() {
         if (isWalking || gameEnded) return;
         hasUpgradedThisTurn = false;
-        await fetch(`/api/roll_dice/${gameId}`, {method: 'POST'});
+        const btn = document.getElementById('roll-btn');
+        btn.disabled = true;
+        await fetch(`/api/roll_dice/${gameId}`, { method: 'POST' });
     }
 
     async function handlePayJail() {
-        const res = await fetch(`/api/pay_jail/${gameId}`, {method: 'POST'});
+        const res = await fetch(`/api/pay_jail/${gameId}`, { method: 'POST' });
         if ((await res.json()).success) syncGame();
     }
 
     async function animateWalk(order, targetPos) {
+        if (isWalking) return;
         isWalking = true;
+
         while (playerPositions[order] !== targetPos) {
             playerPositions[order] = (playerPositions[order] + 1) % 40;
             const container = document.getElementById(`tokens-${playerPositions[order]}`);
             const token = document.querySelector(`.token-${order}`) || document.createElement('div');
             token.className = `player-token token-${order} walking`;
             container.appendChild(token);
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 250));
             token.classList.remove('walking');
         }
         isWalking = false;
@@ -380,12 +614,14 @@
         d1.className = 'die fa-solid ' + icons[v1-1]; d2.className = 'die fa-solid ' + icons[v2-1];
     }
 
-    function updateUpgradePanelContent(cellId) {
+    function showCellInfo(e, cellId) {
+        selectedCellForUpgrade = cellId;
         const data = cellDataMap[cellId];
         const ownerOrder = globalOwnerships[cellId];
         const isMine = ownerOrder === myOrder;
         const mort = globalMortgageData[cellId] || {is_mortgaged: false, turns_left: 0};
 
+        const panel = document.getElementById('upgrade-panel');
         document.getElementById('prop-header').className = 'prop-card-header ' + (data.color || 'dark-blue');
         document.getElementById('prop-name').innerText = data.name;
 
@@ -400,28 +636,13 @@
             for(let i=0; i<=5; i++) {
                 const line = document.getElementById(`rent-${i}`);
                 line.style.display = 'flex';
-                line.querySelector('span:first-child').innerText = i === 0 ? "База:" : (i === 5 ? "Макс:" : i + " 🐟:");
                 line.querySelector('.val').innerText = '$' + (data.rent0 * multipliers[i]);
                 line.classList.toggle('active', i === currentLvl);
             }
-        } else if (isStation) {
-            const stationsCount = Object.keys(globalOwnerships).filter(cid =>
-                cellDataMap[cid].type === 'station' && globalOwnerships[cid] === ownerOrder
-            ).length;
-            for(let i=0; i<=5; i++) {
-                const line = document.getElementById(`rent-${i}`);
-                if (i >= 1 && i <= 4) {
-                    line.style.display = 'flex';
-                    line.querySelector('span:first-child').innerText = i + " Метро:";
-                    line.querySelector('.val').innerText = '$' + (data.rent0 * Math.pow(2, i-1));
-                    line.classList.toggle('active', i === stationsCount);
-                } else { line.style.display = 'none'; }
-            }
         }
 
-        const mortInfo = document.getElementById('mortgage-info');
-        mortInfo.innerText = mort.is_mortgaged ? `В ЗАЛОГЕ (${mort.turns_left} ходов)` : "";
-        document.getElementById('upgrade-cost-info').innerText = isProp ? `Улучшение: $${Math.floor(data.price*0.5)}` : "";
+        document.getElementById('mortgage-info').innerText = mort.is_mortgaged ? `В ЗАЛОГЕ (${mort.turns_left} ход.)` : "";
+        document.getElementById('upgrade-cost-info').innerText = isProp ? `Рыбка: $${Math.floor(data.price*0.5)}` : "";
 
         const btnArea = document.getElementById('action-buttons');
         if (isMine && currentTurnOwner === myOrder && !isWalking) {
@@ -440,153 +661,54 @@
                 mortBtn.innerText = "ЗАЛОЖИТЬ";
             }
         } else { btnArea.style.display = 'none'; }
-    }
 
-    function showCellInfo(e, cellId) {
-        selectedCellForUpgrade = cellId;
-        updateUpgradePanelContent(cellId);
-        const p = document.getElementById('upgrade-panel');
-        p.style.display = 'block';
-        p.style.left = Math.min(e.clientX + 20, window.innerWidth - 240) + 'px';
-        p.style.top = Math.min(e.clientY - 100, window.innerHeight - 350) + 'px';
+        panel.style.display = 'block';
+        panel.style.left = Math.min(e.clientX + 10, window.innerWidth - 260) + 'px';
+        panel.style.top = Math.min(e.clientY - 100, window.innerHeight - 400) + 'px';
     }
 
     function hideUpgrade() { document.getElementById('upgrade-panel').style.display = 'none'; }
 
-    async function confirmUpgrade() {
-        const res = await fetch(`/api/upgrade_property/${gameId}/${selectedCellForUpgrade}`, {method: 'POST'});
-        const d = await res.json();
-        if (d.success) { hasUpgradedThisTurn = true; syncGame(); } else alert(d.error);
-    }
-    async function toggleMortgage() {
-        const isM = globalMortgageData[selectedCellForUpgrade]?.is_mortgaged;
-        const url = isM ? 'unmortgage_property' : 'mortgage_property';
-        await fetch(`/api/${url}/${gameId}/${selectedCellForUpgrade}`, {method: 'POST'});
-        syncGame();
-    }
-    async function confirmSellFish() {
-        await fetch(`/api/sell_fish/${gameId}/${selectedCellForUpgrade}`, {method: 'POST'});
-        syncGame();
-    }
-    async function confirmBuy() { await fetch(`/api/buy_property/${gameId}`, {method: 'POST'}); }
-    async function skipBuy() { await fetch(`/api/skip_buy/${gameId}`, {method: 'POST'}); }
-
-    // ТОРГОВЛЯ (ОТПРАВКА)
-    async function openTradeModal(targetOrder) {
-        const myRes = await fetch(`/api/get_trade_info/${gameId}/${myOrder}`);
-        const theirRes = await fetch(`/api/get_trade_info/${gameId}/${targetOrder}`);
-
-        const myData = await myRes.json();
-        const theirData = await theirRes.json();
-
-        if (theirData.error) { alert("Ошибка получения данных игрока"); return; }
-
-        tradeTargetDatabaseId = theirData.player_id;
-        document.getElementById('trade-target-name').innerText = theirData.username.toUpperCase() + " ОТДАЕТ:";
-
-        const renderProps = (props, elementId) => {
-            document.getElementById(elementId).innerHTML = props.map(p => `
-                <div style="padding:2px">
-                    <input type="checkbox" value="${p.id}" class="${elementId}-cb"> ${p.name} ${p.fish > 0 ? '(с рыбами нельзя!)' : ''}
-                </div>
-            `).join('');
-        };
-
-        renderProps(myData.properties, 'my-props-trade');
-        renderProps(theirData.properties, 'their-props-trade');
-        document.getElementById('trade-modal').style.display = 'block';
-    }
-
-    function closeTrade() { document.getElementById('trade-modal').style.display = 'none'; }
-
-    async function sendTrade() {
-        if (!tradeTargetDatabaseId) return;
-        const offerMoney = parseInt(document.getElementById('offer-money').value) || 0;
-        const requestMoney = parseInt(document.getElementById('request-money').value) || 0;
-        const getSelected = (cls) => Array.from(document.querySelectorAll('.'+cls)).filter(c => c.checked).map(c => c.value).join(',');
-        const myProps = getSelected('my-props-trade-cb');
-        const theirProps = getSelected('their-props-trade-cb');
-
-        if (offerMoney === 0 && requestMoney === 0 && !myProps && !theirProps) {
-            alert("Нельзя предложить пустой договор!"); return;
-        }
-
-        const f = new FormData();
-        f.append('recipient_id', tradeTargetDatabaseId);
-        f.append('offer_money', offerMoney);
-        f.append('request_money', requestMoney);
-        f.append('offer_props', myProps);
-        f.append('request_props', theirProps);
-
-        const res = await fetch(`/api/create_trade/${gameId}`, {method: 'POST', body: f});
-        const d = await res.json();
-        if (d.status === 'ok') { alert("Предложение отправлено!"); closeTrade(); } else { alert("Ошибка: " + (d.error || "Не удалось отправить")); }
-    }
-
-    // ТОРГОВЛЯ (ОБРАБОТКА ВХОДЯЩЕЙ СДЕЛКИ)
-    function showIncomingTrade(trade) {
-        const modal = document.getElementById('receive-trade-modal');
-        const details = document.getElementById('trade-offer-details');
-
-        let offerText = `$${trade.offer_money}`;
-        if (trade.offer_prop_names && trade.offer_prop_names !== "нет") offerText += ` + ${trade.offer_prop_names}`;
-
-        let reqText = `$${trade.request_money}`;
-        if (trade.request_prop_names && trade.request_prop_names !== "нет") reqText += ` + ${trade.request_prop_names}`;
-
-        details.innerHTML = `
-            <p><b>Отправитель:</b> ${trade.sender_name}</p>
-            <p><b>Вам предлагают:</b> ${offerText}</p>
-            <p><b>От Вас хотят:</b> ${reqText}</p>
-        `;
-
-        document.getElementById('accept-trade-btn').onclick = async () => {
-            await fetch(`/api/respond_trade/${gameId}/${trade.id}/accept`, {method: 'POST'});
-            modal.style.display = 'none'; syncGame();
-        };
-
-        document.getElementById('decline-trade-btn').onclick = async () => {
-            await fetch(`/api/respond_trade/${gameId}/${trade.id}/decline`, {method: 'POST'});
-            modal.style.display = 'none'; syncGame();
-        };
-
-        modal.style.display = 'block';
-    }
-
     async function syncGame() {
-        if (isWalking) return;
+        if (isWalking || gameEnded) return;
         try {
             const res = await fetch(`/api/game_state/${gameId}`), data = await res.json();
 
-            // Проверка входящей сделки
+            if (data.status === "finished") {
+                gameEnded = true;
+                const isWin = data.winner_id === data.my_id;
+                const screen = document.getElementById(isWin ? 'win-screen' : 'lose-screen');
+                document.getElementById(isWin ? 'win-avatar' : 'lose-avatar').src = data.winner_avatar;
+                document.getElementById(isWin ? 'win-msg' : 'lose-msg').innerText = isWin ? "Вы стали самым богатым котом!" : "Ваши миски пусты...";
+                screen.style.display = 'flex'; return;
+            }
+
+            // Проверка на банкротство текущего игрока
+            const meInGame = data.players.find(p => p.order === myOrder);
+            if (!meInGame && !gameEnded) {
+                gameEnded = true;
+                document.getElementById('lose-screen').style.display = 'flex';
+                document.getElementById('lose-avatar').src = "/static/default_cat.png";
+                return;
+            }
+
             if (data.incoming_trade && document.getElementById('receive-trade-modal').style.display !== 'block') {
                 showIncomingTrade(data.incoming_trade);
             }
 
-            if (data.status === "finished") {
-                const isWin = data.winner_id === data.my_id;
-                const screen = document.getElementById(isWin ? 'win-screen' : 'lose-screen');
-                document.getElementById(isWin ? 'win-avatar' : 'lose-avatar').src = data.winner_avatar;
-                document.getElementById(isWin ? 'win-msg' : 'lose-msg').innerText = isWin ? "Все коты района признали твой авторитет!" : "Твои миски пусты...";
-                screen.style.display = 'flex'; gameEnded = true; return;
+            if (data.dice_roll_at && data.dice_roll_at !== lastRollAt) {
+                lastRollAt = data.dice_roll_at;
+                await animateDice(data.last_dice[0], data.last_dice[1]);
             }
 
-            const meInGame = data.players.find(p => p.name === "{{ user.username }}");
-            if (!meInGame && !gameEnded) {
-                document.getElementById('lose-screen').style.display = 'flex';
-                gameEnded = true; return;
-            }
-
-            if (data.current_turn !== currentTurnOwner) { currentTurnOwner = data.current_turn; }
-            if (data.dice_roll_at && data.dice_roll_at !== lastRollAt) { lastRollAt = data.dice_roll_at; await animateDice(data.last_dice[0], data.last_dice[1]); }
-
+            currentTurnOwner = data.current_turn;
             for (let p of data.players) {
                 if (playerPositions[p.order] !== p.pos) await animateWalk(p.order, p.pos);
                 document.getElementById(`money-${p.order}`).innerText = `$${p.money}`;
                 const card = document.getElementById(`card-${p.order}`);
                 if(card) card.classList.toggle('active-turn', data.current_turn === p.order);
                 const tbtn = document.getElementById(`trade-with-${p.order}`);
-                if(tbtn) tbtn.style.display = (data.current_turn === myOrder) ? 'flex' : 'none';
+                if(tbtn) tbtn.style.display = (data.current_turn === myOrder && p.order !== myOrder) ? 'flex' : 'none';
             }
 
             const buyP = document.getElementById('buy-action-panel'), rollB = document.getElementById('roll-btn'), jailB = document.getElementById('pay-jail-btn');
@@ -601,29 +723,57 @@
                 jailB.style.display = (mePl?.is_in_jail && data.current_turn === myOrder) ? 'block' : 'none';
             }
 
+            // Обновление владения и рыбок
+            globalFishLevels = data.fish_levels;
+            globalMortgageData = data.mortgages;
+            globalOwnerships = data.ownerships;
+
             document.querySelectorAll('.cell').forEach(c => c.classList.remove('owned-by-1','owned-by-2','owned-by-3','owned-by-4','owned-by-5','owned-by-6'));
             document.querySelectorAll('.fish-container').forEach(fc => fc.innerHTML = '');
             document.querySelectorAll('.mortgage-overlay').forEach(ov => ov.remove());
 
-            globalFishLevels = data.fish_levels; globalMortgageData = data.mortgages; globalOwnerships = data.ownerships;
-
             Object.keys(globalOwnerships).forEach(cid => {
-                const el = document.getElementById(`cell-${parseInt(cid)-1}`);
+                const idx = parseInt(cid) - 1;
+                const el = document.getElementById(`cell-${idx}`);
                 if(el) {
                     el.classList.add(`owned-by-${globalOwnerships[cid]}`);
-                    if (globalMortgageData[cid]?.is_mortgaged) el.innerHTML += '<div class="mortgage-overlay"><span class="mortgage-stamp">ЗАЛОГ</span></div>';
+                    if (globalMortgageData[cid]?.is_mortgaged) {
+                        el.insertAdjacentHTML('beforeend', '<div class="mortgage-overlay"><span class="mortgage-stamp">ЗАЛОГ</span></div>');
+                    }
                     const f = globalFishLevels[cid];
-                    if(f > 0) document.getElementById(`fish-${cid}`).innerHTML = f >= 5 ? '<i class="fa-solid fa-fish fish-icon big-fish"></i>' : '<i class="fa-solid fa-fish fish-icon"></i>'.repeat(f);
+                    if(f > 0) {
+                        const container = document.getElementById(`fish-${cid}`);
+                        if (f >= 5) container.innerHTML = '<i class="fa-solid fa-fish fish-icon big-fish"></i>';
+                        else container.innerHTML = '<i class="fa-solid fa-fish fish-icon"></i>'.repeat(f);
+                    }
                 }
             });
 
             document.getElementById('log-content').innerHTML = data.logs.map(l => `<div>${formatLogText(l)}</div>`).join('');
             document.getElementById('chat-messages').innerHTML = data.chat.map(m => `<div><b>${m.name}:</b> ${m.text}</div>`).join('');
             document.getElementById('chat-messages').scrollTop = document.getElementById('chat-messages').scrollHeight;
-            document.getElementById('turn-indicator').innerText = data.current_turn === myOrder ? "ВАШ ХОД" : "ХОД СОПЕРНИКА";
+            document.getElementById('turn-indicator').innerText = data.current_turn === myOrder ? "ТВОЙ ХОД" : "ХОДИТ ДРУГОЙ КОТ";
 
-        } catch(e) {}
+        } catch(e) { console.error("Sync error:", e); }
     }
+
+    /* Остальные функции (Торговля, покупки и т.д.) без изменений, но исправленные */
+    async function confirmUpgrade() {
+        const res = await fetch(`/api/upgrade_property/${gameId}/${selectedCellForUpgrade}`, {method: 'POST'});
+        if ((await res.json()).success) { hasUpgradedThisTurn = true; syncGame(); hideUpgrade(); }
+    }
+    async function toggleMortgage() {
+        const isM = globalMortgageData[selectedCellForUpgrade]?.is_mortgaged;
+        const url = isM ? 'unmortgage_property' : 'mortgage_property';
+        await fetch(`/api/${url}/${gameId}/${selectedCellForUpgrade}`, {method: 'POST'});
+        syncGame(); hideUpgrade();
+    }
+    async function confirmSellFish() {
+        await fetch(`/api/sell_fish/${gameId}/${selectedCellForUpgrade}`, {method: 'POST'});
+        syncGame(); hideUpgrade();
+    }
+    async function confirmBuy() { await fetch(`/api/buy_property/${gameId}`, {method: 'POST'}); syncGame(); }
+    async function skipBuy() { await fetch(`/api/skip_buy/${gameId}`, {method: 'POST'}); syncGame(); }
 
     async function sendMessage() {
         const i = document.getElementById('chat-input');
@@ -633,7 +783,57 @@
         i.value = '';
     }
 
-    setInterval(syncGame, 2000); syncGame();
+    async function openTradeModal(targetOrder) {
+        const myRes = await fetch(`/api/get_trade_info/${gameId}/${myOrder}`);
+        const theirRes = await fetch(`/api/get_trade_info/${gameId}/${targetOrder}`);
+        const myData = await myRes.json(), theirData = await theirRes.json();
+
+        tradeTargetDatabaseId = theirData.player_id;
+        document.getElementById('trade-target-name').innerText = theirData.username.toUpperCase() + " ОТДАЕТ:";
+
+        const render = (props, el) => {
+            document.getElementById(el).innerHTML = props.map(p => `
+                <div style="margin-bottom:5px"><input type="checkbox" value="${p.id}" class="${el}-cb"> ${p.name}</div>
+            `).join('');
+        };
+        render(myData.properties, 'my-props-trade');
+        render(theirData.properties, 'their-props-trade');
+        document.getElementById('trade-modal').style.display = 'block';
+    }
+
+    function closeTrade() { document.getElementById('trade-modal').style.display = 'none'; }
+
+    async function sendTrade() {
+        const f = new FormData();
+        f.append('recipient_id', tradeTargetDatabaseId);
+        f.append('offer_money', document.getElementById('offer-money').value || 0);
+        f.append('request_money', document.getElementById('request-money').value || 0);
+        const sel = (c) => Array.from(document.querySelectorAll('.'+c)).filter(i => i.checked).map(i => i.value).join(',');
+        f.append('offer_props', sel('my-props-trade-cb'));
+        f.append('request_props', sel('their-props-trade-cb'));
+        await fetch(`/api/create_trade/${gameId}`, {method: 'POST', body: f});
+        closeTrade(); alert("Сделка предложена!");
+    }
+
+    function showIncomingTrade(trade) {
+        const modal = document.getElementById('receive-trade-modal');
+        document.getElementById('trade-offer-details').innerHTML = `
+            <b>${trade.sender_name}</b> предлагает: $${trade.offer_money} + ${trade.offer_prop_names || 'нет полей'}<br>
+            Хочет от вас: $${trade.request_money} + ${trade.request_prop_names || 'нет полей'}
+        `;
+        document.getElementById('accept-trade-btn').onclick = async () => {
+            await fetch(`/api/respond_trade/${gameId}/${trade.id}/accept`, {method: 'POST'});
+            modal.style.display = 'none'; syncGame();
+        };
+        document.getElementById('decline-trade-btn').onclick = async () => {
+            await fetch(`/api/respond_trade/${gameId}/${trade.id}/decline`, {method: 'POST'});
+            modal.style.display = 'none'; syncGame();
+        };
+        modal.style.display = 'block';
+    }
+
+    setInterval(syncGame, 2000);
+    syncGame();
 </script>
 </body>
 </html>
