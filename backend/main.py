@@ -370,6 +370,32 @@ async def send_message(game_id: int, text: str = Form(...), db: Session = Depend
     return {"status": "ok"}
 
 
+@app.post("/api/pay_jail/{game_id}")
+async def pay_jail(game_id: int, db: Session = Depends(get_db), user: models.users = Depends(get_current_user)):
+    game = db.query(models.games).filter(models.games.id == game_id).first()
+    p = db.query(models.game_player).filter(models.game_player.game_id == game_id,
+                                            models.game_player.user_id == user.id).first()
+
+    if not p or game.current_player_turn != p.turn_order:
+        return {"error": "Не твой ход!"}
+
+    if not p.is_in_jail:
+        return {"error": "Ты не в карантине"}
+
+    if p.balance < 50:
+        return {"error": "Недостаточно денег (нужно $50)"}
+
+    # Списываем деньги и выпускаем
+    p.balance -= 50
+    p.is_in_jail = False
+    p.jail_turns = 0
+
+    db.add(models.game_log(game_id=game_id, player_id=p.id,
+                           action_text="заплатил $50 и досрочно покинул карантин.",
+                           created_at=datetime.now(timezone.utc)))
+    db.commit()
+    return {"success": True}
+
 # --- ЛОГИКА ХОДА И ПОКУПКИ (С РЕНТОЙ) ---
 
 @app.post("/api/roll_dice/{game_id}")
@@ -419,31 +445,35 @@ async def roll_dice(game_id: int, db: Session = Depends(get_db), user: models.us
     # 2. Логика карантина
     if p.is_in_jail:
         if is_double:
-            p.is_in_jail, p.jail_turns = False, 0
+            p.is_in_jail = False
+            p.jail_turns = 0
             p.doubles_count = 0
             db.add(models.game_log(game_id=game_id, player_id=p.id,
-                                   action_text=f"выбросил дубль ({d1}:{d2}) и покинул карантин!",
+                                   action_text=f"выбросил дубль ({d1}:{d2}) и выбежал из карантина!",
                                    created_at=datetime.now(timezone.utc)))
-            should_move = True
+            should_move = True  # После дубля в тюрьме игрок СРАЗУ ходит
         else:
             p.jail_turns += 1
             if p.jail_turns >= 3:
+                # Это была 3-я неудачная попытка. Игрок обязан заплатить и выйти.
                 p.balance -= 50
-                p.is_in_jail, p.jail_turns = False, 0
+                p.is_in_jail = False
+                p.jail_turns = 0
                 db.add(models.game_log(game_id=game_id, player_id=p.id,
-                                       action_text="отсидел 3 хода, заплатил $50 и вышел",
+                                       action_text=f"не выкинул дубль за 3 хода, заплатил $50 и вышел.",
                                        created_at=datetime.now(timezone.utc)))
-                should_move = True
+                should_move = True  # И ходит на то, что выкинул
             else:
                 db.add(models.game_log(game_id=game_id, player_id=p.id,
-                                       action_text=f"не выбросил дубль ({d1}:{d2}) и остается на карантине",
+                                       action_text=f"остается в карантине (попытка {p.jail_turns}/3, выпало {d1}:{d2})",
                                        created_at=datetime.now(timezone.utc)))
                 should_move = False
+                # Конец хода, так как дубля нет и срок еще не вышел
                 total_p = db.query(models.game_player).filter(models.game_player.game_id == game_id).count()
                 game.current_player_turn = (game.current_player_turn % total_p) + 1
                 game.has_rolled = False
                 db.commit()
-                return {"status": "still_in_jail"}
+                return {"status": "still_in_jail", "dices": [d1, d2]}
 
     can_buy = False
 
@@ -633,58 +663,95 @@ async def get_trade_info(game_id: int, player_order: int, db: Session = Depends(
 
 @app.post("/api/create_trade/{game_id}")
 async def create_trade(
-        game_id: int, recipient_id: int = Form(...), offer_money: int = Form(0), request_money: int = Form(0),
-        offer_props: str = Form(""), request_props: str = Form(""),
-        db: Session = Depends(get_db), user: models.users = Depends(get_current_user)
+        game_id: int,
+        recipient_id: int = Form(...),
+        offer_money: int = Form(0),
+        request_money: int = Form(0),
+        offer_props: str = Form(""),
+        request_props: str = Form(""),
+        db: Session = Depends(get_db),
+        user: models.users = Depends(get_current_user)
 ):
+    # 1. Ищем игру и проверяем, существует ли она
     game = db.query(models.games).filter(models.games.id == game_id).first()
+    if not game:
+        return {"error": "Игра не найдена"}
+
+    # 2. Ищем текущего игрока (отправителя)
     me = db.query(models.game_player).filter(
         models.game_player.game_id == game_id,
         models.game_player.user_id == user.id
     ).first()
 
+    # 3. Проверка хода
     if not me or game.current_player_turn != me.turn_order:
-        return {"error": "сейчас не ваш ход"}
+        return {"error": "Сейчас не ваш ход"}
 
+    # 4. ПРОВЕРКА НА ПУСТУЮ СДЕЛКУ (Нельзя отправить 0 денег и 0 полей)
+    if offer_money == 0 and request_money == 0 and not offer_props and not request_props:
+        return {"error": "Нельзя предложить абсолютно пустую сделку!"}
+
+    # 5. Проверка на отрицательные суммы
     if offer_money < 0 or request_money < 0:
-        return {"error": "нельзя использовать отрицательные суммы"}
+        return {"error": "Суммы денег не могут быть отрицательными"}
 
+    # 6. Проверка баланса (есть ли у игрока столько денег, сколько он предлагает)
     if me.balance < offer_money:
-        return {"error": "у вас недостаточно денег для предложения"}
+        return {"error": "У вас недостаточно денег для такого предложения"}
 
-    # --- ПРОВЕРКА НА РЫБКИ (ЗАПРЕТ ОБМЕНА УЛУЧШЕННЫХ ПОЛЕЙ) ---
+    # 7. --- ПРОВЕРКА НА РЫБКИ (ЗАПРЕТ ОБМЕНА УЛУЧШЕННЫХ ПОЛЕЙ) ---
     all_props_ids = []
-    if offer_props: all_props_ids.extend([int(x) for x in offer_props.split(",") if x])
-    if request_props: all_props_ids.extend([int(x) for x in request_props.split(",") if x])
+    if offer_props:
+        all_props_ids.extend([int(x) for x in offer_props.split(",") if x])
+    if request_props:
+        all_props_ids.extend([int(x) for x in request_props.split(",") if x])
 
     if all_props_ids:
+        # Проверяем, есть ли хотя бы одна рыбка на любом из вовлеченных в сделку полей
         upgraded = db.query(models.property_ownership).filter(
             models.property_ownership.game_id == game_id,
             models.property_ownership.cell_id.in_(all_props_ids),
             models.property_ownership.fish_count > 0
         ).first()
+
         if upgraded:
-            return {"error": "нельзя обмениваться полями, на которых есть рыбки"}
+            return {"error": "Нельзя обмениваться полями, на которых есть рыбки. Сначала продайте улучшения!"}
 
-    # Если всё ок, создаем сделку
-    db.query(models.trades).filter(models.trades.sender_id == me.id, models.trades.status == "pending").delete()
+    # 8. Удаляем старые висящие сделки от этого игрока (чтобы не спамить)
+    db.query(models.trades).filter(
+        models.trades.sender_id == me.id,
+        models.trades.status == "pending"
+    ).delete()
 
+    # 9. Создаем новую запись сделки
     new_trade = models.trades(
-        game_id=game_id, sender_id=me.id, recipient_id=recipient_id,
-        offer_money=offer_money, request_money=request_money,
-        offer_properties=offer_props, request_properties=request_props,
+        game_id=game_id,
+        sender_id=me.id,
+        recipient_id=recipient_id,
+        offer_money=offer_money,
+        request_money=request_money,
+        offer_properties=offer_props,
+        request_properties=request_props,
         status="pending"
     )
     db.add(new_trade)
 
-    target_name = db.query(models.users.username).join(models.game_player).filter(
-        models.game_player.id == recipient_id).scalar()
+    # 10. Получаем имя получателя для лога
+    target_name = db.query(models.users.username).join(
+        models.game_player, models.users.id == models.game_player.user_id
+    ).filter(models.game_player.id == recipient_id).scalar()
 
-    db.add(models.game_log(game_id=game_id, player_id=me.id,
-                           action_text=f"предложил сделку игроку {target_name}",
-                           created_at=datetime.now(timezone.utc)))
+    # 11. Добавляем запись в лог игры
+    db.add(models.game_log(
+        game_id=game_id,
+        player_id=me.id,
+        action_text=f"предложил сделку игроку {target_name}",
+        created_at=datetime.now(timezone.utc)
+    ))
 
+    # 12. Сохраняем всё в базу
     db.commit()
+
     return {"status": "ok"}
 
 @app.post("/api/create_trade/{game_id}")
@@ -729,27 +796,45 @@ async def create_trade(
     return {"status": "ok"}
 
 
-@app.post("/api/respond_trade/{trade_id}")
-async def respond_trade(trade_id: int, action: str = Form(...), db: Session = Depends(get_db),
-                        user: models.users = Depends(get_current_user)):
+@app.post("/api/respond_trade/{game_id}/{trade_id}/{action}")
+async def respond_trade(
+        game_id: int,
+        trade_id: int,
+        action: str,
+        db: Session = Depends(get_db),
+        user: models.users = Depends(get_current_user)
+):
+    # 1. Ищем сделку
     trade = db.query(models.trades).filter(models.trades.id == trade_id).first()
     if not trade or trade.status != "pending":
-        return {"error": "not_found"}
+        return {"error": "Сделка не найдена или уже обработана"}
 
-    me = db.query(models.game_player).filter(models.game_player.id == trade.recipient_id,
-                                             models.game_player.user_id == user.id).first()
+    # 2. Проверяем, что именно этот юзер — получатель сделки
+    # (Ищем запись игрока в этой игре)
+    me = db.query(models.game_player).filter(
+        models.game_player.id == trade.recipient_id,
+        models.game_player.user_id == user.id
+    ).first()
+
+    if not me:
+        return {"error": "Вы не являетесь получателем этой сделки"}
+
+    # Ищем отправителя
     sender_p = db.query(models.game_player).filter(models.game_player.id == trade.sender_id).first()
     sender_u = db.query(models.users).filter(models.users.id == sender_p.user_id).first()
     sender_name = sender_u.username
 
     if action == "accept":
-        # Проверка баланса перед сделкой
-        if sender_p.balance < trade.offer_money or me.balance < trade.request_money:
+        # 3. ПРОВЕРКА ДЕНЕГ перед окончательным принятием
+        if sender_p.balance < trade.offer_money:
             trade.status = "declined"
             db.commit()
-            return {"error": "no_money"}
+            return {"error": f"У {sender_name} уже нет столько денег!"}
 
-        # 1. СОБИРАЕМ НАЗВАНИЯ ПОЛЕЙ ДЛЯ ЛОГА (до смены владельцев)
+        if me.balance < trade.request_money:
+            return {"error": "У вас недостаточно денег для этой сделки"}
+
+        # 4. СОБИРАЕМ НАЗВАНИЯ ПОЛЕЙ ДЛЯ ЛОГА (до смены владельцев)
         offer_prop_names = []
         if trade.offer_properties:
             off_ids = [int(x) for x in trade.offer_properties.split(",") if x]
@@ -760,55 +845,50 @@ async def respond_trade(trade_id: int, action: str = Form(...), db: Session = De
             req_ids = [int(x) for x in trade.request_properties.split(",") if x]
             req_prop_names = [n[0] for n in db.query(models.cells.name).filter(models.cells.id.in_(req_ids)).all()]
 
-        # 2. ПРОВОДИМ ОБМЕН ДЕНЬГАМИ
+        # 5. ПРОВОДИМ ОБМЕН ДЕНЬГАМИ
         sender_p.balance -= trade.offer_money
         me.balance += trade.offer_money
+
         me.balance -= trade.request_money
         sender_p.balance += trade.request_money
 
-        # 3. ПЕРЕПИСЫВАЕМ ВЛАДЕЛЬЦЕВ ПОЛЕЙ
+        # 6. ПЕРЕПИСЫВАЕМ ВЛАДЕЛЬЦЕВ ПОЛЕЙ
         if trade.offer_properties:
             off_ids = [int(x) for x in trade.offer_properties.split(",") if x]
             db.query(models.property_ownership).filter(
-                models.property_ownership.game_id == trade.game_id,
+                models.property_ownership.game_id == game_id,
                 models.property_ownership.cell_id.in_(off_ids)
             ).update({"owner_id": me.id}, synchronize_session=False)
 
         if trade.request_properties:
             req_ids = [int(x) for x in trade.request_properties.split(",") if x]
             db.query(models.property_ownership).filter(
-                models.property_ownership.game_id == trade.game_id,
+                models.property_ownership.game_id == game_id,
                 models.property_ownership.cell_id.in_(req_ids)
             ).update({"owner_id": sender_p.id}, synchronize_session=False)
 
         trade.status = "accepted"
 
-        # 4. ФОРМИРУЕМ ПОДРОБНЫЙ ЛОГ
-        # Описание того, что получил принимающий (me)
+        # 7. ФОРМИРУЕМ ПОДРОБНЫЙ ЛОГ
         received_by_me = f"${trade.offer_money}"
-        if offer_prop_names:
-            received_by_me += f" и поля [{', '.join(offer_prop_names)}]"
+        if offer_prop_names: received_by_me += f" и поля {', '.join(offer_prop_names)}"
 
-        # Описание того, что получил отправитель (sender)
         received_by_sender = f"${trade.request_money}"
-        if req_prop_names:
-            received_by_sender += f" и поля [{', '.join(req_prop_names)}]"
+        if req_prop_names: received_by_sender += f" и поля {', '.join(req_prop_names)}"
 
         log_msg = (f"совершил обмен с {sender_name}. "
                    f"{user.username} получил {received_by_me}, "
                    f"а {sender_name} получил {received_by_sender}")
 
         db.add(models.game_log(
-            game_id=trade.game_id,
-            player_id=me.id,
-            action_text=log_msg,
-            created_at=datetime.now(timezone.utc)
+            game_id=game_id, player_id=me.id,
+            action_text=log_msg, created_at=datetime.now(timezone.utc)
         ))
     else:
+        # Если отклонили
         trade.status = "declined"
         db.add(models.game_log(
-            game_id=trade.game_id,
-            player_id=me.id,
+            game_id=game_id, player_id=me.id,
             action_text=f"ОТКЛОНИЛ сделку игрока {sender_name}",
             created_at=datetime.now(timezone.utc)
         ))
@@ -864,35 +944,86 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
     if not game:
         return {"status": "error", "message": "Игра не найдена"}
 
-    # 2. Получаем список всех активных игроков (те, кто еще не сдался)
+    # 2. Получаем список всех активных игроков
     players_query = db.query(models.users, models.game_player).join(
         models.game_player, models.users.id == models.game_player.user_id
-    ).filter(models.game_player.game_id == game_id).all()
+    ).filter(models.game_player.game_id == game_id).order_by(models.game_player.turn_order).all()
+
+    # --- ЛОГИКА АВТО-БАНКРОТСТВА (МГНОВЕННЫЙ ВЫЛЕТ) ---
+    bankrupt_detected = False
+    for u_entry, p_entry in players_query:
+        if p_entry.balance < 0:
+            bankrupt_id = p_entry.id
+            bankrupt_order = p_entry.turn_order
+            bankrupt_name = u_entry.username
+
+            # А) Возвращаем все его поля в банк (удаляем записи о владении)
+            db.query(models.property_ownership).filter(
+                models.property_ownership.game_id == game_id,
+                models.property_ownership.owner_id == bankrupt_id
+            ).delete()
+
+            # Б) Добавляем запись в лог игры
+            db.add(models.game_log(
+                game_id=game_id,
+                player_id=bankrupt_id,
+                action_text=f"стал банкротом! Его миски пусты, а кошелек съела моль. Он покидает игру.",
+                created_at=datetime.now(timezone.utc)
+            ))
+
+            # В) Если сейчас был ход именно этого игрока — переключаем ход на СЛЕДУЮЩЕГО
+            if game.current_player_turn == bankrupt_order:
+                # Список всех порядковых номеров игроков, кроме банкрота
+                remaining_orders = [pl[1].turn_order for pl in players_query if pl[1].id != bankrupt_id]
+
+                if remaining_orders:
+                    # Ищем первый номер, который больше текущего (следующий по кругу)
+                    next_potential = [o for o in remaining_orders if o > bankrupt_order]
+                    if next_potential:
+                        game.current_player_turn = min(next_potential)
+                    else:
+                        # Если больше нет, значит идем на начало списка
+                        game.current_player_turn = min(remaining_orders)
+
+                # Сбрасываем флаг броска кубиков для следующего игрока
+                game.has_rolled = False
+
+            # Г) Удаляем игрока и все его висящие сделки
+            db.query(models.trades).filter(
+                (models.trades.sender_id == bankrupt_id) | (models.trades.recipient_id == bankrupt_id)
+            ).delete()
+
+            db.delete(p_entry)
+            db.commit()
+
+            bankrupt_detected = True
+            break  # Прерываем, чтобы обновить список рекурсивно
+
+    # Если кто-то вылетел, вызываем функцию заново, чтобы вернуть актуальный список
+    if bankrupt_detected:
+        return await get_game_state(game_id, db, user)
 
     # --- ЛОГИКА ЗАВЕРШЕНИЯ ИГРЫ ---
-    # Если в игре остался только 1 котик, и статус всё еще "playing" — игра окончена
+    # Если остался только 1 котик — он победитель
     if len(players_query) == 1 and game.status == "playing":
         game.status = "finished"
-        # ЗАПИСЫВАЕМ ПОБЕДИТЕЛЯ ДЛЯ СТАТИСТИКИ ПРОФИЛЯ
         winner_u, winner_p = players_query[0]
         game.winner_id = winner_u.id
         game.finished_at = datetime.now(timezone.utc)
         db.commit()
 
-    # Если игра имеет статус finished, возвращаем данные победителя для финального экрана
+    # Экран финала
     if game.status == "finished":
-        if len(players_query) > 0:
-            winner_u, winner_p = players_query[0]
-            return {
-                "status": "finished",
-                "winner_name": winner_u.username,
-                "winner_avatar": winner_u.avatar_url if winner_u.avatar_url else "/static/default_cat.png",
-                "winner_id": winner_u.id,
-                "my_id": user.id if user else 0
-            }
-        return {"status": "finished", "message": "Игроков не осталось"}
+        winner_u = db.query(models.users).filter(models.users.id == game.winner_id).first()
+        return {
+            "status": "finished",
+            "winner_name": winner_u.username if winner_u else "Котик-невидимка",
+            "winner_avatar": winner_u.avatar_url if winner_u and winner_u.avatar_url else "/static/default_cat.png",
+            "winner_id": game.winner_id,
+            "my_id": user.id if user else 0
+        }
 
-    # --- СБОР ДАННЫХ ДЛЯ ПРОДОЛЖАЮЩЕЙСЯ ИГРЫ ---
+    # --- СБОР ДАННЫХ ВЛАДЕНИЯ ---
     ownerships_raw = db.query(models.property_ownership).filter(models.property_ownership.game_id == game_id).all()
     owner_map = {}
     fish_map = {}
@@ -900,25 +1031,26 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
 
     for o in ownerships_raw:
         p_order = db.query(models.game_player.turn_order).filter(models.game_player.id == o.owner_id).scalar()
-        owner_map[o.cell_id] = p_order
-        fish_map[o.cell_id] = o.fish_count
-        mort_map[o.cell_id] = {
-            "is_mortgaged": o.is_mortgaged,
-            "turns_left": o.mortgage_turns_left
-        }
+        if p_order:
+            owner_map[o.cell_id] = p_order
+            fish_map[o.cell_id] = o.fish_count
+            mort_map[o.cell_id] = {
+                "is_mortgaged": o.is_mortgaged,
+                "turns_left": o.mortgage_turns_left
+            }
 
+    # Логи и Чат
     logs = db.query(models.users.username, models.game_log.action_text).join(
         models.game_player, models.game_log.player_id == models.game_player.id
-    ).join(
-        models.users, models.game_player.user_id == models.users.id
-    ).filter(
+    ).join(models.users, models.game_player.user_id == models.users.id).filter(
         models.game_log.game_id == game_id
     ).order_by(models.game_log.id.desc()).limit(15).all()
 
     chat = db.query(models.game_chat, models.users.username).join(models.users).filter(
         models.game_chat.game_id == game_id
-    ).order_by(models.game_chat.id.asc()).limit(30).all()
+    ).order_by(models.game_chat.id.asc()).all()
 
+    # --- ЛОГИКА ТЕКУЩЕГО ИГРОКА (ПОКУПКА И СДЕЛКИ) ---
     me = db.query(models.game_player).filter(
         models.game_player.game_id == game_id,
         models.game_player.user_id == (user.id if user else 0)
@@ -926,16 +1058,44 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
 
     can_buy_now = False
     cell_info = {}
-    if me and game.current_player_turn == me.turn_order and game.has_rolled:
-        current_cell = db.query(models.cells).filter(models.cells.id == me.position + 1).first()
-        if current_cell:
-            is_owned = db.query(models.property_ownership).filter(
-                models.property_ownership.game_id == game_id,
-                models.property_ownership.cell_id == current_cell.id
-            ).first()
-            if current_cell.type in ['property', 'station'] and not is_owned:
-                can_buy_now = True
-                cell_info = {"name": current_cell.name, "price": int(current_cell.purchase_price)}
+    incoming_trade_data = None
+
+    if me:
+        # Может ли текущий игрок купить поле
+        if game.current_player_turn == me.turn_order and game.has_rolled:
+            current_cell = db.query(models.cells).filter(models.cells.id == me.position + 1).first()
+            if current_cell:
+                is_owned = db.query(models.property_ownership).filter(
+                    models.property_ownership.game_id == game_id,
+                    models.property_ownership.cell_id == current_cell.id
+                ).first()
+                if current_cell.type in ['property', 'station'] and not is_owned:
+                    can_buy_now = True
+                    cell_info = {"name": current_cell.name, "price": int(current_cell.purchase_price)}
+
+        # Есть ли входящие сделки для меня
+        trade = db.query(models.trades).filter(
+            models.trades.game_id == game_id,
+            models.trades.recipient_id == me.id,
+            models.trades.status == "pending"
+        ).first()
+
+        if trade:
+            off_ids = [int(x) for x in trade.offer_properties.split(",") if x] if trade.offer_properties else []
+            req_ids = [int(x) for x in trade.request_properties.split(",") if x] if trade.request_properties else []
+            off_names = [n[0] for n in db.query(models.cells.name).filter(models.cells.id.in_(off_ids)).all()]
+            req_names = [n[0] for n in db.query(models.cells.name).filter(models.cells.id.in_(req_ids)).all()]
+            sender_u = db.query(models.users.username).join(models.game_player).filter(
+                models.game_player.id == trade.sender_id).scalar()
+
+            incoming_trade_data = {
+                "id": trade.id,
+                "sender_name": sender_u,
+                "offer_money": trade.offer_money,
+                "request_money": trade.request_money,
+                "offer_prop_names": ", ".join(off_names) if off_names else "нет",
+                "request_prop_names": ", ".join(req_names) if req_names else "нет"
+            }
 
     return {
         "status": "playing",
@@ -947,7 +1107,8 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
                 "name": p[0].username,
                 "pos": p[1].position,
                 "order": p[1].turn_order,
-                "money": int(p[1].balance)
+                "money": int(p[1].balance),
+                "is_in_jail": p[1].is_in_jail
             } for p in players_query
         ],
         "ownerships": owner_map,
@@ -957,9 +1118,9 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
         "chat": [{"name": c[1], "text": c[0].message} for c in chat],
         "can_buy_now": can_buy_now,
         "current_cell_data": cell_info,
+        "incoming_trade": incoming_trade_data,
         "my_id": user.id if user else 0
     }
-
 
 @app.post("/api/buy_property/{game_id}")
 async def buy_property(game_id: int, db: Session = Depends(get_db), user: models.users = Depends(get_current_user)):
@@ -1212,15 +1373,21 @@ async def upload_avatar(file: UploadFile = File(...), db: Session = Depends(get_
 
 
 @app.post("/api/upgrade_property/{game_id}/{cell_id}")
-async def upgrade_property(game_id: int, cell_id: int, db: Session = Depends(get_db), user: models.users = Depends(get_current_user)):
+async def upgrade_property(game_id: int, cell_id: int, db: Session = Depends(get_db),
+                           user: models.users = Depends(get_current_user)):
     game = db.query(models.games).filter(models.games.id == game_id).first()
     p = db.query(models.game_player).filter(models.game_player.game_id == game_id,
                                             models.game_player.user_id == user.id).first()
 
     if not p or game.current_player_turn != p.turn_order:
-        return {"error": "not_your_turn"}
+        return {"error": "Сейчас не твой ход!"}
 
-    # Проверяем владение этим полем
+    # 1. Ищем клетку, которую хотим улучшить
+    cell = db.query(models.cells).filter(models.cells.id == cell_id).first()
+    if not cell or cell.type != 'property':
+        return {"error": "Это поле нельзя улучшать рыбками"}
+
+    # 2. Проверяем владение
     ownership = db.query(models.property_ownership).filter(
         models.property_ownership.game_id == game_id,
         models.property_ownership.cell_id == cell_id,
@@ -1228,18 +1395,32 @@ async def upgrade_property(game_id: int, cell_id: int, db: Session = Depends(get
     ).first()
 
     if not ownership:
-        return {"error": "not_your_property"}
+        return {"error": "Это не твоё поле!"}
 
-    cell = db.query(models.cells).filter(models.cells.id == cell_id).first()
+    if ownership.is_mortgaged:
+        return {"error": "Нельзя улучшать заложенное поле!"}
 
-    # СТРОГАЯ ПРОВЕРКА: Прокачивать можно только обычные улицы (property). Метро (station) нельзя.
-    if cell.type != 'property':
-        return {"error": "этот тип поля нельзя улучшать рыбками"}
+    # --- НОВАЯ ЛОГИКА: ПРОВЕРКА ЦВЕТОВОЙ ГРУППЫ ---
+
+    # Считаем, сколько всего полей этого цвета в игре
+    total_color_fields = db.query(models.cells).filter(models.cells.color_group == cell.color_group).count()
+
+    # Считаем, сколькими из них владеет игрок
+    owned_color_fields = db.query(models.property_ownership).join(models.cells).filter(
+        models.property_ownership.game_id == game_id,
+        models.property_ownership.owner_id == p.id,
+        models.cells.color_group == cell.color_group
+    ).count()
+
+    if owned_color_fields < total_color_fields:
+        return {"error": f"Сначала собери все поля цвета {cell.color_group}, чтобы покупать рыбки!"}
+
+    # --- КОНЕЦ ПРОВЕРКИ ---
 
     if ownership.fish_count >= 5:
-        return {"error": "max_level_reached"}
+        return {"error": "Достигнут максимальный уровень уюта (5 рыбок)!"}
 
-    # ИСПРАВЛЕНИЕ ОШИБКИ: приводим Decimal к float перед умножением
+    # Цена улучшения (50% от цены покупки)
     upgrade_price = int(float(cell.purchase_price) * 0.5)
 
     if p.balance >= upgrade_price:
@@ -1249,13 +1430,13 @@ async def upgrade_property(game_id: int, cell_id: int, db: Session = Depends(get
         db.add(models.game_log(
             game_id=game_id,
             player_id=p.id,
-            action_text=f"улучшил поле {cell.name} (уровень {ownership.fish_count} 🐟)",
+            action_text=f"улучшил поле {cell.name} (теперь тут {ownership.fish_count} 🐟)",
             created_at=datetime.now(timezone.utc)
         ))
         db.commit()
         return {"success": True, "new_level": ownership.fish_count}
 
-    return {"error": "no_money"}
+    return {"error": "Недостаточно денег для покупки рыбки"}
 
 @app.post("/api/sell_fish/{game_id}/{cell_id}")
 async def sell_fish(game_id: int, cell_id: int, db: Session = Depends(get_db), user: models.users = Depends(get_current_user)):
