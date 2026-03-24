@@ -328,37 +328,57 @@ async def surrender(game_id: int, db: Session = Depends(get_db), user: models.us
     if not user:
         return {"error": "Вы не авторизованы"}
 
-    # Ищем игрока в этой конкретной игре
+    game = db.query(models.games).filter(models.games.id == game_id).first()
     player_entry = db.query(models.game_player).filter(
         models.game_player.game_id == game_id,
         models.game_player.user_id == user.id
     ).first()
 
     if player_entry:
-        # 1. Возвращаем все его поля в банк (удаляем записи о владении)
+        p_id = player_entry.id
+        p_order = player_entry.turn_order
+
+        # 1. Возвращаем поля банку
         db.query(models.property_ownership).filter(
-            models.property_ownership.owner_id == player_entry.id,
+            models.property_ownership.owner_id == p_id,
             models.property_ownership.game_id == game_id
         ).delete()
 
-        # 2. Добавляем запись в лог игры
+        # 2. Удаляем его сделки
+        db.query(models.trades).filter(
+            (models.trades.sender_id == p_id) | (models.trades.recipient_id == p_id)
+        ).delete()
+
+        # 3. ЛОГИКА ПЕРЕДАЧИ ХОДА (Самое важное!)
+        if game.current_player_turn == p_order:
+            # Ищем всех остальных игроков
+            others = db.query(models.game_player).filter(
+                models.game_player.game_id == game_id,
+                models.game_player.id != p_id
+            ).all()
+
+            if others:
+                # Находим следующий порядок хода
+                orders = [pl.turn_order for pl in others]
+                next_potential = [o for o in orders if o > p_order]
+                game.current_player_turn = min(next_potential) if next_potential else min(orders)
+                game.has_rolled = False  # Новый игрок должен кинуть кубики
+
+        # 4. Лог
         new_log = models.game_log(
-            game_id=game_id,
-            player_id=player_entry.id,
-            action_text=f"сдался, оставил свои миски и ушел в другую коробку.",
+            game_id=game_id, player_id=p_id,
+            action_text=f"собрал свои вещи и добровольно покинул коробку (сдался).",
             created_at=datetime.now(timezone.utc)
         )
         db.add(new_log)
 
-        # 3. Удаляем игрока из таблицы участников текущего матча
+        # 5. Удаляем игрока
         db.delete(player_entry)
-
-        # Сохраняем изменения в базе
         db.commit()
 
         return {"success": True}
 
-    return {"error": "Вы не являетесь участником этой игры"}
+    return {"error": "Вы не в игре"}
 
 # --- ЛОГИКА ЧАТА ---
 
@@ -944,12 +964,12 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
     if not game:
         return {"status": "error", "message": "Игра не найдена"}
 
-    # 2. Получаем список всех активных игроков
+    # 2. Получаем список всех активных игроков (те, кто еще в матче), сортируем по порядку хода
     players_query = db.query(models.users, models.game_player).join(
         models.game_player, models.users.id == models.game_player.user_id
     ).filter(models.game_player.game_id == game_id).order_by(models.game_player.turn_order).all()
 
-    # --- ЛОГИКА АВТО-БАНКРОТСТВА (МГНОВЕННЫЙ ВЫЛЕТ) ---
+    # --- ЛОГИКА АВТО-БАНКРОТСТВА (МГНОВЕННЫЙ ВЫЛЕТ И ПЕРЕДАЧА ИМУЩЕСТВА) ---
     bankrupt_detected = False
     for u_entry, p_entry in players_query:
         if p_entry.balance < 0:
@@ -957,35 +977,60 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
             bankrupt_order = p_entry.turn_order
             bankrupt_name = u_entry.username
 
-            # А) Возвращаем все его поля в банк (удаляем записи о владении)
-            db.query(models.property_ownership).filter(
+            # --- НОВЫЙ БЛОК: ОПРЕДЕЛЕНИЕ КТО ВЫКИНУЛ ИГРОКА ---
+            # Проверяем, стоит ли игрок на чужом поле
+            current_cell_id = p_entry.position + 1
+            ownership_on_cell = db.query(models.property_ownership).filter(
                 models.property_ownership.game_id == game_id,
-                models.property_ownership.owner_id == bankrupt_id
-            ).delete()
+                models.property_ownership.cell_id == current_cell_id
+            ).first()
+
+            killer_id = None
+            # Если на этой клетке есть владелец и это не сам банкрот
+            if ownership_on_cell and ownership_on_cell.owner_id != bankrupt_id:
+                killer_id = ownership_on_cell.owner_id
+
+            if killer_id:
+                # Находим данные "убийцы" для лога
+                killer_p = db.query(models.game_player).filter(models.game_player.id == killer_id).first()
+                killer_u = db.query(models.users).filter(models.users.id == killer_p.user_id).first()
+
+                # ПЕРЕДАЕМ ВСЕ ПОЛЯ БАНКРОТА НОВОМУ ВЛАДЕЛЬЦУ
+                db.query(models.property_ownership).filter(
+                    models.property_ownership.game_id == game_id,
+                    models.property_ownership.owner_id == bankrupt_id
+                ).update({
+                    "owner_id": killer_id,
+                    "fish_count": 0,       # Рыбки (дома) сгорают при конфискации
+                    "is_mortgaged": False  # Поля выходят из залога
+                }, synchronize_session=False)
+
+                action_msg = f"стал банкротом! Все его миски и поля перешли к котику {killer_u.username}."
+            else:
+                # А) Если "убийцы" нет (банкротство об налог или банк), возвращаем поля банку
+                db.query(models.property_ownership).filter(
+                    models.property_ownership.game_id == game_id,
+                    models.property_ownership.owner_id == bankrupt_id
+                ).delete()
+                action_msg = f"стал банкротом! Его миски пусты, а имущество вернулось в приют (банк)."
 
             # Б) Добавляем запись в лог игры
             db.add(models.game_log(
                 game_id=game_id,
                 player_id=bankrupt_id,
-                action_text=f"стал банкротом! Его миски пусты, а кошелек съела моль. Он покидает игру.",
+                action_text=action_msg,
                 created_at=datetime.now(timezone.utc)
             ))
 
             # В) Если сейчас был ход именно этого игрока — переключаем ход на СЛЕДУЮЩЕГО
             if game.current_player_turn == bankrupt_order:
-                # Список всех порядковых номеров игроков, кроме банкрота
                 remaining_orders = [pl[1].turn_order for pl in players_query if pl[1].id != bankrupt_id]
-
                 if remaining_orders:
-                    # Ищем первый номер, который больше текущего (следующий по кругу)
                     next_potential = [o for o in remaining_orders if o > bankrupt_order]
                     if next_potential:
                         game.current_player_turn = min(next_potential)
                     else:
-                        # Если больше нет, значит идем на начало списка
                         game.current_player_turn = min(remaining_orders)
-
-                # Сбрасываем флаг броска кубиков для следующего игрока
                 game.has_rolled = False
 
             # Г) Удаляем игрока и все его висящие сделки
@@ -999,12 +1044,10 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
             bankrupt_detected = True
             break  # Прерываем, чтобы обновить список рекурсивно
 
-    # Если кто-то вылетел, вызываем функцию заново, чтобы вернуть актуальный список
     if bankrupt_detected:
         return await get_game_state(game_id, db, user)
 
     # --- ЛОГИКА ЗАВЕРШЕНИЯ ИГРЫ ---
-    # Если остался только 1 котик — он победитель
     if len(players_query) == 1 and game.status == "playing":
         game.status = "finished"
         winner_u, winner_p = players_query[0]
@@ -1012,7 +1055,6 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
         game.finished_at = datetime.now(timezone.utc)
         db.commit()
 
-    # Экран финала
     if game.status == "finished":
         winner_u = db.query(models.users).filter(models.users.id == game.winner_id).first()
         return {
@@ -1048,7 +1090,7 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
 
     chat = db.query(models.game_chat, models.users.username).join(models.users).filter(
         models.game_chat.game_id == game_id
-    ).order_by(models.game_chat.id.asc()).all()
+    ).order_by(models.game_chat.id.asc()).all() # Убрал лимит как просил
 
     # --- ЛОГИКА ТЕКУЩЕГО ИГРОКА (ПОКУПКА И СДЕЛКИ) ---
     me = db.query(models.game_player).filter(
@@ -1061,7 +1103,6 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
     incoming_trade_data = None
 
     if me:
-        # Может ли текущий игрок купить поле
         if game.current_player_turn == me.turn_order and game.has_rolled:
             current_cell = db.query(models.cells).filter(models.cells.id == me.position + 1).first()
             if current_cell:
@@ -1073,7 +1114,6 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
                     can_buy_now = True
                     cell_info = {"name": current_cell.name, "price": int(current_cell.purchase_price)}
 
-        # Есть ли входящие сделки для меня
         trade = db.query(models.trades).filter(
             models.trades.game_id == game_id,
             models.trades.recipient_id == me.id,
@@ -1093,8 +1133,8 @@ async def get_game_state(game_id: int, db: Session = Depends(get_db), user: mode
                 "sender_name": sender_u,
                 "offer_money": trade.offer_money,
                 "request_money": trade.request_money,
-                "offer_prop_names": ", ".join(off_names) if off_names else "нет",
-                "request_prop_names": ", ".join(req_names) if req_names else "нет"
+                "offer_prop_names": ", ".join(off_names),
+                "request_prop_names": ", ".join(req_names)
             }
 
     return {

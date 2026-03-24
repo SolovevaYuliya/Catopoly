@@ -9,7 +9,6 @@ class cells(Base):
     color_group = Column(String)
     purchase_price = Column(Numeric)
     rent_base = Column(Numeric)
-    house_price = Column(Numeric)
 
 class users(Base):
     __tablename__ = "users"

@@ -323,9 +323,27 @@
     }
 
     async function handleSurrender() {
-        if (!confirm("Ты уверен, что хочешь сдаться?")) return;
-        await fetch(`/api/surrender/${gameId}`, { method: 'POST' });
-        window.location.href = '/api/search';
+        if (!confirm("Ты уверен, что хочешь сдаться? Все твои поля пропадут!")) return;
+
+        try {
+            const response = await fetch(`/api/surrender/${gameId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Если сервер подтвердил удаление, уходим в поиск
+                window.location.href = '/api/search';
+            } else {
+                alert("Ошибка при сдаче: " + (result.error || "неизвестно"));
+            }
+        } catch (e) {
+            console.error("Ошибка сети:", e);
+            // Если сеть легла, но мы хотим выйти — просто редиректим
+            window.location.href = '/api/search';
+        }
     }
 
     async function handleRoll() {
