@@ -7,7 +7,7 @@
 
     <!--
         ПОДКЛЮЧЕНИЕ ВНЕШНИХ РЕСУРСОВ
-        Font Awesome для иконок и Google Fonts для шрифтов
+        Font Awesome для иконок и Google Fonts для премиального вида
     -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Roboto:wght@300;400;900&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
     <style>
         /*
            =========================================
-           1. БАЗОВЫЕ ПЕРЕМЕННЫЕ И СБРОС СТИЛЕЙ
+           1. БАЗОВЫЕ ПЕРЕМЕННЫЕ И ГЛОБАЛЬНЫЙ СБРОС
            =========================================
         */
         :root {
@@ -24,16 +24,21 @@
             --center-bg: #E9F0D8;
             --accent-red: #701A1A;
             --accent-green: #3C4C37;
+            --accent-green-light: #4c6146;
             --accent-yellow: #EEDC82;
+            --accent-yellow-dark: #b3a04d;
             --text-dark: #1A261B;
             --text-light: #E2EAD2;
-            --shadow: 0 10px 40px rgba(0,0,0,0.6);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-soft: 0 10px 40px rgba(0,0,0,0.6);
+            --shadow-hard: 0 15px 60px rgba(0,0,0,0.9);
+            --transition-fast: 0.2s ease;
+            --transition-std: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
+            outline: none;
         }
 
         body {
@@ -45,11 +50,12 @@
             overflow: hidden;
             height: 100vh;
             width: 100vw;
+            user-select: none;
         }
 
         /*
            =========================================
-           2. ОСНОВНАЯ СЕТКА ИНТЕРФЕЙСА (LAYOUT)
+           2. ОСНОВНОЙ ПАНЕЛЬНЫЙ ЛЕЙАУТ
            =========================================
         */
         .game-layout {
@@ -62,7 +68,7 @@
             gap: 20px;
         }
 
-        /* ЛЕВАЯ ПАНЕЛЬ: Игроки, Статистика и Логи */
+        /* ЛЕВАЯ ПАНЕЛЬ: Игроки и Логи */
         .side-left {
             width: 320px;
             display: flex;
@@ -86,35 +92,36 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
+            box-shadow: var(--shadow-soft);
+            transition: var(--transition-std);
             position: relative;
             background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
         }
 
         /* Подсветка активного игрока */
         .active-turn {
             transform: scale(1.05);
-            box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
             border-color: white !important;
             filter: brightness(1.2);
             z-index: 10;
         }
 
-        /* Цветовая дифференциация игроков */
-        .card-1 { border-left: 10px solid #ED1B24 !important; background: rgba(237, 27, 36, 0.15); }
-        .card-2 { border-left: 10px solid #0072BB !important; background: rgba(0, 114, 187, 0.15); }
-        .card-3 { border-left: 10px solid #FEF200 !important; background: rgba(254, 242, 0, 0.15); }
-        .card-4 { border-left: 10px solid #1FB25A !important; background: rgba(31, 178, 90, 0.15); }
-        .card-5 { border-left: 10px solid #F7941D !important; background: rgba(247, 148, 29, 0.15); }
-        .card-6 { border-left: 10px solid #92278F !important; background: rgba(146, 39, 143, 0.15); }
+        /* Цветовые стили игроков */
+        .card-1 { border-left: 10px solid #ED1B24 !important; background: rgba(237, 27, 36, 0.1); }
+        .card-2 { border-left: 10px solid #0072BB !important; background: rgba(0, 114, 187, 0.1); }
+        .card-3 { border-left: 10px solid #FEF200 !important; background: rgba(254, 242, 0, 0.1); }
+        .card-4 { border-left: 10px solid #1FB25A !important; background: rgba(31, 178, 90, 0.1); }
+        .card-5 { border-left: 10px solid #F7941D !important; background: rgba(247, 148, 29, 0.1); }
+        .card-6 { border-left: 10px solid #92278F !important; background: rgba(146, 39, 143, 0.1); }
 
-        .user-color-1 { color: #ED1B24 !important; }
-        .user-color-2 { color: #0072BB !important; }
-        .user-color-3 { color: #FEF200 !important; }
-        .user-color-4 { color: #1FB25A !important; }
-        .user-color-5 { color: #F7941D !important; }
-        .user-color-6 { color: #92278F !important; }
+        .user-color-1 { color: #ED1B24 !important; font-weight: 900; }
+        .user-color-2 { color: #0072BB !important; font-weight: 900; }
+        .user-color-3 { color: #FEF200 !important; font-weight: 900; }
+        .user-color-4 { color: #1FB25A !important; font-weight: 900; }
+        .user-color-5 { color: #F7941D !important; font-weight: 900; }
+        .user-color-6 { color: #92278F !important; font-weight: 900; }
 
         .p-avatar {
             width: 50px;
@@ -123,12 +130,16 @@
             background-size: cover;
             background-position: center;
             border: 2px solid rgba(255,255,255,0.2);
+            flex-shrink: 0;
         }
 
+        .p-info { overflow: hidden; }
         .p-info b {
-            font-size: 15px;
+            font-size: 14px;
             display: block;
             margin-bottom: 2px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
             color: white !important;
         }
 
@@ -136,30 +147,27 @@
             font-size: 18px;
             font-weight: 900;
             color: var(--accent-yellow);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
-        /* Кнопка инициации договора */
         .btn-trade-open {
-            font-size: 10px;
+            font-size: 9px;
             cursor: pointer;
             background: var(--accent-yellow);
             color: var(--accent-red);
             border: none;
             border-radius: 6px;
-            padding: 3px 8px;
+            padding: 4px 8px;
             font-weight: 900;
             margin-top: 5px;
             text-transform: uppercase;
-            box-shadow: 0 2px 0 #b36b15;
+            box-shadow: 0 2px 0 var(--accent-yellow-dark);
             transition: 0.1s;
         }
+        .btn-trade-open:active { transform: translateY(1px); box-shadow: none; }
+        .btn-trade-open:disabled { background: #555; box-shadow: none; color: #888; cursor: not-allowed; }
 
-        .btn-trade-open:active {
-            transform: translateY(1px);
-            box-shadow: none;
-        }
-
-        /* Панель событий (Логи) */
+        /* Логи событий */
         .events-panel {
             flex-grow: 1;
             background: rgba(0, 0, 0, 0.3);
@@ -174,9 +182,10 @@
         .events-title {
             font-weight: 900;
             color: var(--accent-yellow);
-            font-size: 14px;
+            font-size: 13px;
             margin-bottom: 10px;
             text-transform: uppercase;
+            letter-spacing: 1px;
             border-bottom: 2px solid var(--accent-green);
             padding-bottom: 5px;
         }
@@ -189,14 +198,12 @@
             color: var(--text-light);
             padding-right: 5px;
         }
-
-        #log-content b { font-weight: 900; }
         #log-content::-webkit-scrollbar { width: 4px; }
         #log-content::-webkit-scrollbar-thumb { background: var(--accent-green); border-radius: 10px; }
 
         /*
            =========================================
-           3. ЦЕНТРАЛЬНАЯ ЧАСТЬ: ИГРОВОЕ ПОЛЕ
+           3. ЦЕНТРАЛЬНОЕ ИГРОВОЕ ПОЛЕ
            =========================================
         */
         .side-center {
@@ -215,7 +222,7 @@
             height: 94vh;
             background: var(--board-bg);
             border: 6px solid var(--accent-green);
-            box-shadow: 0 0 80px rgba(0,0,0,0.8);
+            box-shadow: var(--shadow-hard);
             position: relative;
         }
 
@@ -229,12 +236,11 @@
             justify-content: center;
             position: relative;
             text-align: center;
-            border: 1px solid rgba(0,0,0,0.1);
+            border: 1px solid rgba(0,0,0,0.05);
             background-image: radial-gradient(rgba(0,0,0,0.02) 2px, transparent 2px);
-            background-size: 20px 20px;
+            background-size: 30px 30px;
         }
 
-        /* Клетки поля */
         .cell {
             border: 1px solid var(--accent-green);
             position: relative;
@@ -248,17 +254,11 @@
             overflow: hidden;
             cursor: pointer;
             box-sizing: border-box;
-            transition: background 0.2s;
+            transition: var(--transition-fast);
         }
-
         .cell:hover { background: #ceddbb; }
 
-        .color-bar {
-            position: absolute;
-            z-index: 5;
-            box-sizing: border-box;
-        }
-
+        .color-bar { position: absolute; z-index: 5; }
         .bottom .color-bar { top: 0; left: 0; width: 100%; height: 20px; border-bottom: 2px solid var(--accent-green); }
         .top .color-bar { bottom: 0; left: 0; width: 100%; height: 20px; border-top: 2px solid var(--accent-green); }
         .left .color-bar { right: 0; top: 0; height: 100%; width: 20px; border-left: 2px solid var(--accent-green); }
@@ -268,7 +268,7 @@
             font-size: 8px;
             font-weight: 800;
             text-transform: uppercase;
-            padding: 22px 2px 4px 2px;
+            padding: 2px 4px;
             flex-grow: 1;
             display: flex;
             align-items: center;
@@ -276,20 +276,40 @@
             line-height: 1.1;
             width: 100%;
             word-break: break-word;
+            box-sizing: border-box;
+            z-index: 10;
+            text-align: center;
         }
 
-        /* Специальные отступы для боковых сторон, где текст повернут или прижат */
-        .left .cell-name, .right .cell-name { padding: 4px; }
+        /* 2. ОТСТУПЫ ДЛЯ ВСЕЙ КЛЕТКИ (передвигаем всё содержимое сразу) */
+        /* Если полоска сверху (нижний ряд) */
+        .cell.bottom { padding-top: 25px; padding-bottom: 2px; }
 
+        /* Если полоска снизу (верхний ряд) — ТВОЙ СЛУЧАЙ НА СКРИНШОТЕ */
+        .cell.top { padding-bottom: 25px; padding-top: 2px; }
+
+        /* Если полоска справа (левый ряд) */
+        .cell.left { padding-right: 25px; padding-left: 2px; }
+
+        /* Если полоска слева (правый ряд) */
+        .cell.right { padding-left: 25px; padding-right: 2px; }
+
+        /* Угловые клетки (где нет плашек) центрируем обычно */
+        .cell:not(:has(.color-bar)) {
+            padding: 5px;
+        }
+
+        /* 3. Исправляем стиль цены, чтобы она не накладывалась */
         .cell-price {
             font-size: 9px;
             font-weight: 900;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
             width: 100%;
             display: block;
+            z-index: 11;
         }
 
-        /* Цветовые группы недвижимости */
+        /* Цвета групп */
         .brown { background: #955436 !important; }
         .light-blue { background: #AAE0FA !important; }
         .pink { background: #D93A96 !important; }
@@ -299,28 +319,16 @@
         .green { background: #1FB25A !important; }
         .dark-blue { background: #0072BB !important; }
 
-        /* Стили владения клеткой */
-        .owned-by-1 { box-shadow: inset 0 0 0 5px #ED1B24 !important; }
-        .owned-by-2 { box-shadow: inset 0 0 0 5px #0072BB !important; }
-        .owned-by-3 { box-shadow: inset 0 0 0 5px #FEF200 !important; }
-        .owned-by-4 { box-shadow: inset 0 0 0 5px #1FB25A !important; }
-        .owned-by-5 { box-shadow: inset 0 0 0 5px #F7941D !important; }
-        .owned-by-6 { box-shadow: inset 0 0 0 5px #92278F !important; }
-
-        /* Эффект залога */
+        /* Владение и залоги */
         .mortgage-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6);
             z-index: 30;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-
         .mortgage-stamp {
             color: #FF3B30;
             font-weight: 900;
@@ -333,60 +341,40 @@
             box-shadow: 0 0 10px black;
         }
 
-        /* Контейнеры для рыб (улучшений) */
         .fish-container {
             position: absolute;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 1px;
+            gap: 2px;
+            z-index: 20; /* Поверх всего */
             pointer-events: none;
-            z-index: 20;
         }
-        .bottom .fish-container { top: 0; left: 0; width: 100%; height: 20px; }
-        .top .fish-container { bottom: 0; left: 0; width: 100%; height: 20px; }
-        .left .fish-container { right: 0; top: 0; height: 100%; width: 20px; flex-direction: column; }
-        .right .fish-container { left: 0; top: 0; height: 100%; width: 20px; flex-direction: column; }
+        /* Позиционирование контейнера в зависимости от стороны */
+        .bottom .fish-container { top: 2px; width: 100%; height: 20px; }
+        .top .fish-container { bottom: 2px; width: 100%; height: 20px; }
+        .left .fish-container { right: 2px; height: 100%; width: 20px; flex-direction: column; }
+        .right .fish-container { left: 2px; height: 100%; width: 20px; flex-direction: column; }
 
         .fish-icon {
-            font-size: 10px;
-            color: white;
-            text-shadow: 1px 1px 2px black;
+            color: #FFD700; /* Золотой цвет */
+            font-size: 12px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
         }
+
         .big-fish {
-            font-size: 16px !important;
-            color: #FFD700 !important;
-            animation: fish-pulse 1.5s infinite;
+            font-size: 22px !important;
+            color: #FF4500 !important; /* Огненно-рыжий для большой рыбы */
+            filter: drop-shadow(0 0 5px gold);
         }
-        @keyframes fish-pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
+        .fish-icon { font-size: 10px; color: white; text-shadow: 1px 1px 2px black; }
+        .big-fish { font-size: 16px !important; color: #FFD700 !important; animation: fish-pulse 1.5s infinite; }
+        @keyframes fish-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
-        /*
-           =========================================
-           4. УПРАВЛЕНИЕ: КУБИКИ И КНОПКИ
-           =========================================
-        */
-        .dice-area {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 25px;
-            perspective: 500px;
-        }
-
-        .die {
-            font-size: 80px;
-            color: var(--accent-red);
-            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
-            transition: transform 0.1s;
-        }
-
-        .shaking {
-            animation: shake 0.15s infinite;
-        }
-
+        /* Управление */
+        .dice-area { display: flex; gap: 20px; margin-bottom: 25px; perspective: 500px; }
+        .die { font-size: 80px; color: var(--accent-red); filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3)); transition: transform 0.1s; }
+        .shaking { animation: shake 0.15s infinite; }
         @keyframes shake {
             0% { transform: translate(2px, 2px) rotate(0deg); }
             25% { transform: translate(-2px, -2px) rotate(-5deg); }
@@ -402,25 +390,13 @@
             border: none;
             font-weight: 900;
             cursor: pointer;
-            font-size: 26px;
+            font-size: 24px;
             box-shadow: 0 8px 0 #232d21;
             transition: 0.2s;
         }
+        .dice-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #232d21; }
+        .dice-btn:disabled { background: #555; opacity: 0.6; cursor: not-allowed; box-shadow: none; transform: translateY(4px); }
 
-        .dice-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 4px 0 #232d21;
-        }
-
-        .dice-btn:disabled {
-            background: #555;
-            opacity: 0.6;
-            cursor: not-allowed;
-            box-shadow: none;
-            transform: translateY(4px);
-        }
-
-        /* Кнопка выхода из тюрьмы */
         .jail-pay-btn {
             background: #F7941D;
             color: white;
@@ -434,234 +410,155 @@
             box-shadow: 0 4px 0 #b36b15;
             transition: 0.1s;
         }
-        .jail-pay-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #b36b15; }
 
-        /* Фишки игроков */
+        /* Фишки */
         .tokens-container {
-            position: absolute;
-            bottom: 8px;
-            display: flex;
-            gap: 4px;
-            z-index: 50;
-            justify-content: center;
-            width: 100%;
-            height: 24px;
-            flex-wrap: wrap;
+            position: absolute; bottom: 8px; display: flex; gap: 4px;
+            z-index: 50; justify-content: center; width: 100%; height: 24px; flex-wrap: wrap;
         }
-
-        .player-token {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 2px solid white;
-            box-shadow: 0 3px 6px rgba(0,0,0,0.6);
-            transition: all 0.2s linear;
-        }
-
-        .token-1 { background: #ED1B24; }
-        .token-2 { background: #0072BB; }
-        .token-3 { background: #FEF200; }
-        .token-4 { background: #1FB25A; }
-        .token-5 { background: #F7941D; }
-        .token-6 { background: #92278F; }
-
-        .walking {
-            transform: scale(1.6) translateY(-12px);
-            z-index: 100;
-        }
+        .player-token { width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.6); transition: all 0.22s linear; }
+        .walking { transform: scale(1.6) translateY(-12px); z-index: 100; }
 
         /*
            =========================================
-           5. ПРАВАЯ ПАНЕЛЬ: ЧАТ И СООБЩЕНИЯ
+           4. ПРАВАЯ ПАНЕЛЬ: ЧАТ
            =========================================
         */
-        .side-right {
-            width: 340px;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-        }
-
-        .chat-panel {
-            height: 100%;
-            background: var(--center-bg);
-            border-radius: 35px;
-            border: 5px solid var(--accent-green);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-        }
-
-        #chat-messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 18px;
-            font-size: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            color: var(--text-dark);
-        }
-
-        .chat-input-area {
-            padding: 15px;
-            background: rgba(0,0,0,0.05);
-            border-top: 2px solid var(--accent-green);
-        }
-
-        #chat-input {
-            width: 100%;
-            padding: 12px 15px;
-            border-radius: 15px;
-            border: 2px solid var(--accent-green);
-            box-sizing: border-box;
-            outline: none;
-            font-family: inherit;
-        }
+        .side-right { width: 340px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .chat-panel { height: 100%; background: var(--center-bg); border-radius: 35px; border: 5px solid var(--accent-green); display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--shadow-soft); }
+        #chat-messages { flex-grow: 1; overflow-y: auto; padding: 18px; font-size: 15px; display: flex; flex-direction: column; gap: 8px; color: var(--text-dark); }
+        .chat-input-area { padding: 15px; background: rgba(0,0,0,0.05); border-top: 2px solid var(--accent-green); }
+        #chat-input { width: 100%; padding: 12px 15px; border-radius: 15px; border: 2px solid var(--accent-green); box-sizing: border-box; outline: none; }
 
         /*
            =========================================
-           6. МОДАЛЬНЫЕ ОКНА И ПОПАПЫ
+           5. МОДАЛЬНЫЕ ОКНА И UI СДЕЛОК
            =========================================
         */
-        /* Карточка недвижимости (Прокачка) */
+        /* Прокачка */
         .property-card-popup {
-            display: none;
-            position: fixed;
-            width: 260px;
-            background: var(--center-bg);
-            border: 4px solid var(--accent-green);
-            border-radius: 20px;
-            z-index: 10000;
-            color: var(--text-dark);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-            overflow: hidden;
+            display: none; position: fixed; width: 260px; background: var(--center-bg);
+            border: 4px solid var(--accent-green); border-radius: 20px; z-index: 10000;
+            color: var(--text-dark); box-shadow: 0 20px 60px rgba(0,0,0,0.8); overflow: hidden;
         }
-
-        .prop-card-header {
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            text-shadow: 1px 1px 2px black;
-            font-weight: 900;
-            text-transform: uppercase;
-            font-size: 14px;
-        }
-
+        .prop-card-header { height: 50px; display: flex; align-items: center; justify-content: center; color: white; text-shadow: 1px 1px 2px black; font-weight: 900; text-transform: uppercase; font-size: 14px; }
         .prop-card-body { padding: 15px; }
         .rent-line { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 8px; border-radius: 5px; }
         .rent-line.active { background: #BFDBAE; font-weight: 900; color: #0072BB; }
 
-        /* Окно Договора (Трейд) */
-        .trade-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 650px;
-            background: var(--bg-main);
-            border: 6px solid var(--accent-green);
-            border-radius: 40px;
-            z-index: 20000;
-            padding: 35px;
-            box-shadow: 0 0 120px black;
-            color: white;
-        }
-
-        .trade-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            margin-top: 20px;
-        }
-
-        .trade-col {
-            background: rgba(255,255,255,0.08);
-            padding: 20px;
-            border-radius: 25px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .trade-props-list {
-            max-height: 220px;
-            overflow-y: auto;
-            margin-top: 12px;
-            font-size: 13px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .trade-money-input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 12px;
-            border: 2px solid var(--accent-green);
-            background: #fff;
-            margin-top: 10px;
-            box-sizing: border-box;
-            font-weight: 900;
-            font-size: 16px;
-        }
-
-        /* Уведомление о входящем предложении */
+        /* ОКНО ПОЛУЧЕННОГО ДОГОВОРА - ПРЕМИУМ */
         .incoming-trade-alert {
             display: none;
             position: fixed;
             bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            width: 500px;
-            background: #EEDC82;
-            color: #701A1A;
-            border: 5px solid #701A1A;
-            border-radius: 30px;
-            padding: 30px;
+            width: 550px;
+            background: linear-gradient(135deg, #1A261B 0%, #0d140e 100%);
+            color: white;
+            border: 5px solid var(--accent-yellow);
+            border-radius: 40px;
+            padding: 35px;
             z-index: 30000;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.7);
+            box-shadow: 0 20px 100px rgba(0,0,0,0.9);
+            animation: slide-up-premium 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        /* Финальные экраны */
-        .final-screen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 999999;
-            background: rgba(10, 20, 10, 0.98);
-            backdrop-filter: blur(25px);
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        .incoming-trade-alert h3 {
+            color: var(--accent-yellow);
+            margin: 0 0 15px 0;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: 2px;
+            font-weight: 900;
+            font-size: 20px;
             text-align: center;
         }
 
-        .final-avatar {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            border: 10px solid var(--accent-yellow);
-            margin-bottom: 20px;
-            object-fit: cover;
+        #trade-summary {
+            font-size: 17px;
+            margin: 20px 0;
+            line-height: 1.8;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(238, 220, 130, 0.15);
         }
 
-        .final-title { font-size: 70px; font-weight: 900; margin: 20px 0; }
-        .final-btn {
+        /* Золотистый цвет для "Получите" и "Отдадите", которые вставляет JS */
+        #trade-summary b {
+            color: var(--accent-yellow) !important;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        @keyframes slide-up-premium {
+            from { transform: translate(-50%, 100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .trade-btn-accept {
+            flex: 1;
             background: #1FB25A;
             color: white;
-            padding: 18px 50px;
-            border-radius: 50px;
-            text-decoration: none;
+            border: none;
+            padding: 18px;
+            border-radius: 20px;
             font-weight: 900;
-            font-size: 26px;
-            margin-top: 30px;
-            box-shadow: 0 10px 0 #147a3d;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+            box-shadow: 0 5px 0 #147a3d;
+            transition: 0.2s;
+        }
+
+        .trade-btn-decline {
+            flex: 1;
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 20px;
+            font-weight: 900;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+            box-shadow: 0 5px 0 #4a1111;
+            transition: 0.2s;
+        }
+
+        .trade-btn-accept:active, .trade-btn-decline:active {
+            transform: translateY(3px);
+            box-shadow: none;
+        }
+        /* --- ЦВЕТА ДЛЯ ФИШЕК И ЗАХВАЧЕННЫХ ПОЛЕЙ --- */
+
+        /* Цвета самих фишек (кружочков) на поле */
+        .token-1 { background-color: #ED1B24 !important; }
+        .token-2 { background-color: #0072BB !important; }
+        .token-3 { background-color: #FEF200 !important; }
+        .token-4 { background-color: #1FB25A !important; }
+        .token-5 { background-color: #F7941D !important; }
+        .token-6 { background-color: #92278F !important; }
+
+        /* Рамки вокруг захваченных клеток */
+        .owned-by-1 { box-shadow: inset 0 0 0 6px #ED1B24 !important; background: rgba(237, 27, 36, 0.05); }
+        .owned-by-2 { box-shadow: inset 0 0 0 6px #0072BB !important; background: rgba(0, 114, 187, 0.05); }
+        .owned-by-3 { box-shadow: inset 0 0 0 6px #FEF200 !important; background: rgba(254, 242, 0, 0.05); }
+        .owned-by-4 { box-shadow: inset 0 0 0 6px #1FB25A !important; background: rgba(31, 178, 90, 0.05); }
+        .owned-by-5 { box-shadow: inset 0 0 0 6px #F7941D !important; background: rgba(247, 148, 29, 0.05); }
+        .owned-by-6 { box-shadow: inset 0 0 0 6px #92278F !important; background: rgba(146, 39, 143, 0.05); }
+
+        /* Дополнительно: чтобы фишки были круглыми и яркими */
+        .player-token {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            display: inline-block;
+            z-index: 100;
         }
     </style>
 </head>
@@ -679,7 +576,7 @@
                     <b>{{ u.username }}</b>
                     <div class="money-val" id="money-{{ p.turn_order }}">${{ p.balance|int }}</div>
                     {% if p.user_id != user.id %}
-                        <button class="btn-trade-open" onclick="openTradeModal({{ p.turn_order }})">
+                        <button class="btn-trade-open" id="btn-trade-{{ p.turn_order }}" onclick="openTradeModal({{ p.turn_order }})">
                             <i class="fa-solid fa-handshake"></i> Договор
                         </button>
                     {% endif %}
@@ -689,16 +586,16 @@
         </div>
 
         <div class="events-panel">
-            <div class="events-title"><i class="fa-solid fa-clock-rotate-left"></i> Хроники Кошачьего Мира</div>
+            <div class="events-title"><i class="fa-solid fa-clock-rotate-left"></i> История кошачьих дел</div>
             <div id="log-content"></div>
         </div>
 
         <button onclick="handleSurrender()" style="background: var(--accent-red); color: white; padding: 15px; border-radius: 18px; font-weight: 900; border: none; cursor: pointer; transition: 0.3s; box-shadow: 0 5px 0 #4a1111;">
-            <i class="fa-solid fa-door-open"></i> ПОКИНУТЬ КОРОБКУ (СДАТЬСЯ)
+            <i class="fa-solid fa-door-open"></i> СДАТЬСЯ (ВЫЙТИ)
         </button>
     </div>
 
-    <!-- ЦЕНТРАЛЬНОЕ ПОЛЕ -->
+    <!-- ЦЕНТРАЛЬНАЯ ЧАСТЬ -->
     <div class="side-center">
         <div class="board">
             <div class="center-area">
@@ -708,22 +605,21 @@
                 </div>
 
                 <button class="dice-btn" id="roll-btn" onclick="handleRoll()">БРОСИТЬ КУБИКИ</button>
-                <button class="jail-pay-btn" id="jail-pay-btn" style="display:none;" onclick="payJail()">ВЫЙТИ ИЗ КАРАНТИНА ($50)</button>
+                <button class="jail-pay-btn" id="jail-pay-btn" style="display:none;" onclick="payJail()">ВЫЙТИ ИЗ ТЮРЬМЫ ($50)</button>
 
-                <!-- Панель покупки текущей клетки -->
-                <div id="buy-action-panel" style="display:none; flex-direction:column; gap:12px; align-items:center; background: var(--accent-green); padding: 25px; border-radius: 30px; margin-top: 20px; border: 3px solid var(--accent-yellow); box-shadow: var(--shadow); color: white;">
-                    <div id="buy-cell-name" style="font-weight:900; font-size:20px; text-transform:uppercase;">Клетка</div>
-                    <div style="font-size: 18px;">Стоимость: <b id="buy-cell-price-text" style="color:var(--accent-yellow);">$0</b></div>
+                <!-- Панель действий покупки -->
+                <div id="buy-action-panel" style="display:none; flex-direction:column; gap:12px; align-items:center; background: var(--accent-green); padding: 25px; border-radius: 30px; margin-top: 20px; border: 3px solid var(--accent-yellow); color: white;">
+                    <div id="buy-cell-name" style="font-weight:900; font-size:20px; text-transform: uppercase;">Клетка</div>
+                    <div>Цена: <b id="buy-cell-price-text" style="color:var(--accent-yellow);">$0</b></div>
                     <div style="display:flex; gap:12px; margin-top:5px;">
                         <button style="background:#1FB25A; color:white; border:none; padding:12px 25px; border-radius:15px; font-weight:900; cursor:pointer;" onclick="confirmBuy()">КУПИТЬ</button>
                         <button style="background:var(--accent-red); color:white; border:none; padding:12px 25px; border-radius:15px; font-weight:900; cursor:pointer;" onclick="skipBuy()">ПРОПУСТИТЬ</button>
                     </div>
                 </div>
 
-                <p id="turn-indicator" style="font-weight: 900; color: var(--accent-green); font-size: 20px; margin-top:20px; letter-spacing: 2px; text-transform: uppercase;"></p>
+                <p id="turn-indicator" style="font-weight: 900; color: var(--accent-green); font-size: 20px; margin-top:20px; text-transform: uppercase; letter-spacing: 1px;"></p>
             </div>
 
-            <!-- ГЕНЕРАЦИЯ КЛЕТОК (Jinja2) -->
             {% for cell in cells %}
                 {% set idx = loop.index0 %}
                 {% if idx <= 10 %}{% set r, c, side = 11, 11-idx, "bottom" %}
@@ -732,9 +628,7 @@
                 {% else %}{% set r, c, side = 1+(idx-30), 11, "right" %}{% endif %}
 
                 <div class="cell {{ side }}" id="cell-{{ idx }}" style="grid-row: {{ r }}; grid-column: {{ c }};" onclick="showCellInfo(event, {{ cell.id }})">
-                    {% if cell.color_group %}
-                        <div class="color-bar {{ cell.color_group.lower() }}"></div>
-                    {% endif %}
+                    {% if cell.color_group %}<div class="color-bar {{ cell.color_group.lower() }}"></div>{% endif %}
                     <div class="fish-container" id="fish-{{ cell.id }}"></div>
                     <span class="cell-name">{{ cell.name }}</span>
                     {% if cell.purchase_price %}
@@ -746,29 +640,25 @@
         </div>
     </div>
 
-    <!-- ПРАВАЯ ПАНЕЛЬ: ЧАТ -->
+    <!-- ЧАТ -->
     <div class="side-right">
         <div class="chat-panel">
-            <div style="background: var(--accent-green); color: white; padding: 20px; text-align: center; font-weight: 900; font-size: 18px;">
-                <i class="fa-solid fa-comments"></i> КОШАЧИЙ ЧАТ
+            <div style="background: var(--accent-green); color: white; padding: 20px; text-align: center; font-weight: 900; font-size: 16px;">
+                <i></i> ЧАТ
             </div>
             <div id="chat-messages"></div>
             <div class="chat-input-area">
-                <input type="text" id="chat-input" placeholder="Мяукните что-нибудь..." onkeydown="if(event.key==='Enter') sendMessage()">
+                <input type="text" id="chat-input" placeholder="Напишите сообщение..." onkeydown="if(event.key==='Enter') sendMessage()">
             </div>
         </div>
     </div>
 </div>
 
-<!-- =========================================
-     МОДАЛЬНЫЕ ОКНА (СКРЫТЫЕ)
-     ========================================= -->
-
-<!-- ОКНО ИНФОРМАЦИИ/ПРОКАЧКИ -->
+<!-- ОКНО ИНФОРМАЦИИ КЛЕТКИ -->
 <div id="upgrade-panel" class="property-card-popup" onclick="event.stopPropagation()">
     <div id="prop-header" class="prop-card-header">ИНФОРМАЦИЯ</div>
     <div class="prop-card-body">
-        <div id="prop-name" style="text-align:center; font-weight:900; margin-bottom:10px; border-bottom:1px solid #ccc; padding-bottom: 5px;">Поле</div>
+        <div id="prop-name" style="text-align:center; font-weight:900; margin-bottom:10px; border-bottom:1px solid #ddd; padding-bottom:5px;">Поле</div>
         <div id="rent-info-area">
             <div class="rent-line" id="rent-0"><span>База:</span> <span class="val">$0</span></div>
             <div class="rent-line" id="rent-1"><span>1 🐟:</span> <span class="val">$0</span></div>
@@ -782,89 +672,84 @@
         <button id="main-upgrade-btn" onclick="confirmUpgrade()" style="background:#1FB25A; color:white; border:none; padding:10px; border-radius:10px; font-weight:900; cursor:pointer;">КУПИТЬ РЫБКУ</button>
         <button id="mortgage-btn" onclick="toggleMortgage()" style="background:#F7941D; color:white; border:none; padding:10px; border-radius:10px; font-weight:900; cursor:pointer;">ЗАЛОЖИТЬ</button>
     </div>
-    <div style="padding: 0 15px 15px 15px;">
-        <button onclick="hideUpgrade()" style="width:100%; background:#777; color:white; border:none; padding:10px; border-radius:10px; font-weight:bold; cursor:pointer;">ЗАКРЫТЬ</button>
-    </div>
+    <div style="padding: 0 15px 15px 15px;"><button onclick="hideUpgrade()" style="width:100%; background:#777; color:white; border:none; padding:10px; border-radius:10px; font-weight:bold; cursor:pointer;">ЗАКРЫТЬ</button></div>
 </div>
 
 <!-- ОКНО ДОГОВОРА (ТРЕЙД) -->
 <div id="trade-window" class="trade-modal">
-    <h2 id="trade-title" style="margin: 0; text-align: center; color: var(--accent-yellow); text-transform: uppercase;">Предложение сделки</h2>
+    <div class="trade-header">
+        <h2>Заключение договора</h2>
+    </div>
     <div class="trade-grid">
         <div class="trade-col">
-            <h3 style="margin-top:0; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">Вы отдаете:</h3>
-            <input type="number" id="offer-money" class="trade-money-input" placeholder="Сумма $">
-            <div id="my-props-list" class="trade-props-list"></div>
+            <h3>ВЫ ПРЕДЛАГАЕТЕ:</h3>
+            <input type="number" id="offer-money" class="trade-money-input" placeholder="0 $">
+            <div id="my-props-list" class="trade-props-list">
+                <!-- Сюда JS добавит список -->
+            </div>
         </div>
         <div class="trade-col">
-            <h3 style="margin-top:0; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;">Вы просите:</h3>
-            <input type="number" id="request-money" class="trade-money-input" placeholder="Сумма $">
-            <div id="their-props-list" class="trade-props-list"></div>
+            <h3>ВЫ ПРОСИТЕ:</h3>
+            <input type="number" id="request-money" class="trade-money-input" placeholder="0 $">
+            <div id="their-props-list" class="trade-props-list">
+                <!-- Сюда JS добавит список -->
+            </div>
         </div>
     </div>
-    <div style="margin-top:30px; display:flex; gap:15px;">
-        <button onclick="sendTradeProposal()" style="flex:1; background:#1FB25A; color:white; border:none; padding:18px; border-radius:20px; font-weight:900; cursor:pointer; font-size:16px;">ОТПРАВИТЬ СДЕЛКУ</button>
-        <button onclick="closeTradeModal()" style="flex:1; background:#777; color:white; border:none; padding:18px; border-radius:20px; cursor:pointer; font-weight:900;">ОТМЕНА</button>
+    <div class="trade-actions">
+        <button class="trade-btn-send" onclick="sendTradeProposal()">ОТПРАВИТЬ ПРЕДЛОЖЕНИЕ</button>
+        <button class="trade-btn-cancel" onclick="closeTradeModal()">ОТМЕНА</button>
     </div>
 </div>
 
-<!-- ОКНО ПРИЕМА СДЕЛКИ -->
+<!-- ПАНЕЛЬ ВХОДЯЩЕГО ДОГОВОРА -->
 <div id="incoming-trade-alert" class="incoming-trade-alert">
-    <h3 style="margin-top: 0; text-transform: uppercase;"><i class="fa-solid fa-bell"></i> Входящий договор от <span id="trade-sender-name">...</span></h3>
-    <div id="trade-summary" style="font-size: 15px; margin: 20px 0; line-height: 1.5; background: rgba(0,0,0,0.05); padding: 15px; border-radius: 15px;"></div>
-    <div style="display: flex; gap: 15px;">
-        <button onclick="respondTrade('accept')" style="flex: 1; background: #1FB25A; color: white; border: none; padding: 15px; border-radius: 15px; font-weight: 900; cursor: pointer; font-size: 16px;">ПРИНЯТЬ</button>
-        <button onclick="respondTrade('decline')" style="flex: 1; background: #701A1A; color: white; border: none; padding: 15px; border-radius: 15px; font-weight: 900; cursor: pointer; font-size: 16px;">ОТКЛОНИТЬ</button>
+    <h3><i class="fa-solid fa-scroll"></i> Поступил договор от <span id="trade-sender-name">...</span></h3>
+
+    <div id="trade-summary">
+        <!-- Сюда JavaScript автоматически вставит условия сделки -->
+    </div>
+
+    <div style="display: flex; gap: 20px;">
+        <button class="trade-btn-accept" onclick="respondTrade('accept')">
+            ПРИНЯТЬ
+        </button>
+        <button class="trade-btn-decline" onclick="respondTrade('decline')">
+            ОТКЛОНИТЬ
+        </button>
     </div>
 </div>
 
-<!-- ЭКРАНЫ ФИНАЛА -->
+<!-- ФИНАЛЫ -->
 <div id="win-screen" class="final-screen">
     <img id="win-avatar" src="" class="final-avatar">
-    <div class="final-title" style="color:var(--accent-yellow);">ПОБЕДА! МЯУ!</div>
-    <div id="win-msg" style="font-size:26px; margin-bottom:40px; color: white;">Вы стали самым богатым котом в районе!</div>
-    <a href="/api/search" class="final-btn">ВЕРНУТЬСЯ В ЛОББИ</a>
+    <div class="final-title" style="color:var(--accent-yellow);">ПОБЕДА!</div>
+    <a href="/api/search" class="final-btn">В ЛОББИ</a>
 </div>
 
 <div id="lose-screen" class="final-screen">
     <div class="final-title" style="color:var(--accent-red);">БАНКРОТ...</div>
-    <div style="font-size: 24px; color: white; margin-bottom: 30px;">Вас выгнали из коробки. Попробуйте снова!</div>
-    <a href="/api/search" class="final-btn">ВЕРНУТЬСЯ В ЛОББИ</a>
+    <a href="/api/search" class="final-btn">В ЛОББИ</a>
 </div>
 
 <script>
     /*
        =========================================
-       7. ГЛОБАЛЬНЫЕ ДАННЫЕ И ИНИЦИАЛИЗАЦИЯ
+       6. ЛОГИКА И СОСТОЯНИЯ (JS)
        =========================================
     */
     const gameId = {{ game.id }};
     const myOrder = parseInt("{% for u, p in players_list %}{% if u.id == user.id %}{{ p.turn_order }}{% endif %}{% endfor %}");
     const playerNames = [{% for u, p in players_list %}"{{ u.username }}",{% endfor %}];
-
-    // Карта для быстрого поиска цвета по имени
-    const nameToOrderMap = {
-        {% for u, p in players_list %} "{{ u.username }}": {{ p.turn_order }}, {% endfor %}
-    };
+    const nameToOrderMap = { {% for u, p in players_list %} "{{ u.username }}": {{ p.turn_order }}, {% endfor %} };
 
     let playerPositions = {};
-    let isWalking = false;
-    let lastRollAt = null;
-    let gameEnded = false;
-    let selectedCellForUpgrade = null;
-    let activeTradeId = null;
+    let isWalking = false, lastRollAt = null, gameEnded = false, selectedCellForUpgrade = null, activeTradeId = null;
+    let globalFishLevels = {}, globalMortgageData = {}, globalOwnerships = {};
+    let currentTurnOrderGlobal = 0;
 
-    // Глобальные состояния владений и уровней
-    let globalFishLevels = {};
-    let globalMortgageData = {};
-    let globalOwnerships = {};
+    {% for u, p in players_list %} playerPositions[{{ p.turn_order }}] = {{ p.position }}; {% endfor %}
 
-    // Инициализация стартовых позиций
-    {% for u, p in players_list %}
-    playerPositions[{{ p.turn_order }}] = {{ p.position }};
-    {% endfor %}
-
-    // Статические данные о клетках (из Jinja)
     const cellDataMap = {
         {% for cell in cells %}
         "{{ cell.id }}": {
@@ -878,11 +763,7 @@
         {% endfor %}
     };
 
-    /*
-       =========================================
-       8. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (ФОРМАТИРОВАНИЕ)
-       =========================================
-    */
+    /** ФОРМАТИРОВАНИЕ ЛОГОВ **/
     function formatLogText(text) {
         let formatted = text;
         playerNames.forEach(name => {
@@ -895,50 +776,31 @@
         return formatted;
     }
 
-    /*
-       =========================================
-       9. АНИМАЦИИ (КУБИКИ И ХОДЬБА)
-       =========================================
-    */
+    /** АНИМАЦИИ **/
     async function animateDice(v1, v2) {
-        const d1 = document.getElementById('die-1');
-        const d2 = document.getElementById('die-2');
-        d1.classList.add('shaking');
-        d2.classList.add('shaking');
-
+        const d1 = document.getElementById('die-1'), d2 = document.getElementById('die-2');
+        d1.classList.add('shaking'); d2.classList.add('shaking');
         await new Promise(r => setTimeout(r, 650));
-
-        d1.classList.remove('shaking');
-        d2.classList.remove('shaking');
-
+        d1.classList.remove('shaking'); d2.classList.remove('shaking');
         const icons = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-four', 'fa-dice-five', 'fa-dice-six'];
-        d1.className = 'die fa-solid ' + icons[v1 - 1];
-        d2.className = 'die fa-solid ' + icons[v2 - 1];
+        d1.className = 'die fa-solid ' + icons[v1 - 1]; d2.className = 'die fa-solid ' + icons[v2 - 1];
     }
 
     async function animateWalk(order, targetPos) {
-        if (isWalking) return;
-        isWalking = true;
-
+        if (isWalking) return; isWalking = true;
         while (playerPositions[order] !== targetPos) {
             playerPositions[order] = (playerPositions[order] + 1) % 40;
             const container = document.getElementById(`tokens-${playerPositions[order]}`);
             const token = document.querySelector(`.token-${order}`) || document.createElement('div');
-
             token.className = `player-token token-${order} walking`;
             container.appendChild(token);
-
             await new Promise(r => setTimeout(r, 220));
             token.classList.remove('walking');
         }
         isWalking = false;
     }
 
-    /*
-       =========================================
-       10. ОСНОВНЫЕ ИГРОВЫЕ ДЕЙСТВИЯ
-       =========================================
-    */
+    /** ДЕЙСТВИЯ **/
     async function handleRoll() {
         if (isWalking || gameEnded) return;
         document.getElementById('roll-btn').disabled = true;
@@ -947,72 +809,73 @@
 
     async function payJail() {
         const res = await fetch(`/api/pay_jail/${gameId}`, { method: 'POST' }).then(r => r.json());
-        if (res.error) alert(res.error);
-        else syncGame();
+        if (res.error) alert(res.error); else syncGame();
     }
 
-    async function confirmBuy() {
-        await fetch(`/api/buy_property/${gameId}`, { method: 'POST' });
-        syncGame();
-    }
-
-    async function skipBuy() {
-        await fetch(`/api/skip_buy/${gameId}`, { method: 'POST' });
-        syncGame();
-    }
+    async function confirmBuy() { await fetch(`/api/buy_property/${gameId}`, { method: 'POST' }); syncGame(); }
+    async function skipBuy() { await fetch(`/api/skip_buy/${gameId}`, { method: 'POST' }); syncGame(); }
 
     function showCellInfo(e, cellId) {
         selectedCellForUpgrade = cellId;
         const data = cellDataMap[cellId];
         const ownerOrder = globalOwnerships[cellId];
-        const isMine = ownerOrder === myOrder;
-        const mort = globalMortgageData[cellId] || { is_mortgaged: false };
-
         const panel = document.getElementById('upgrade-panel');
+
         document.getElementById('prop-header').className = 'prop-card-header ' + (data.color || 'dark-blue');
         document.getElementById('prop-name').innerText = data.name;
 
-        // Расчет аренды для отображения
-        if (data.type === 'property' || data.type === 'station') {
-            document.getElementById('rent-info-area').style.display = 'block';
-            if (data.type === 'property') {
-                const multipliers = [1, 5, 15, 40, 70, 100];
-                const currentLvl = globalFishLevels[cellId] || 0;
-                for (let i = 0; i <= 5; i++) {
-                    const line = document.getElementById(`rent-${i}`);
-                    line.querySelector('.val').innerText = '$' + (data.rent0 * multipliers[i]);
-                    line.classList.toggle('active', i === currentLvl);
-                }
-            } else if (data.type === 'station') {
-                // Логика станций
-                let sCount = Object.keys(globalOwnerships).filter(id =>
-                    cellDataMap[id].type === 'station' && globalOwnerships[id] === ownerOrder
-                ).length;
-                for (let i = 0; i < 4; i++) {
-                    const line = document.getElementById(`rent-${i}`);
-                    line.querySelector('span:first-child').innerText = (i+1) + " ст.:";
+        const isProp = data.type === 'property'; // Обычная улица
+        const isStation = data.type === 'station'; // Вокзал/Станция
+
+        document.getElementById('rent-info-area').style.display = 'block';
+
+        if (isProp) {
+            // ЛОГИКА ДЛЯ УЛИЦ (РЫБКИ)
+            const multipliers = [1, 5, 15, 40, 70, 100];
+            const currentLvl = globalFishLevels[cellId] || 0;
+            const labels = ["База:", "1 🐟:", "2 🐟:", "3 🐟:", "4 🐟:", "Отель (Золотая рыбка):"];
+
+            for (let i = 0; i <= 5; i++) {
+                const line = document.getElementById(`rent-${i}`);
+                line.style.display = 'flex';
+                line.querySelector('span:first-child').innerText = labels[i];
+                line.querySelector('.val').innerText = '$' + (data.rent0 * multipliers[i]);
+                line.classList.toggle('active', i === currentLvl);
+            }
+        } else if (isStation) {
+            // ЛОГИКА ДЛЯ СТАНЦИЙ
+            let sCount = Object.keys(globalOwnerships).filter(id =>
+                cellDataMap[id].type === 'station' && globalOwnerships[id] === ownerOrder
+            ).length;
+
+            for (let i = 0; i <= 5; i++) {
+                const line = document.getElementById(`rent-${i}`);
+                if (i < 4) {
+                    line.style.display = 'flex';
+                    line.querySelector('span:first-child').innerText = (i + 1) + " ст.:";
                     line.querySelector('.val').innerText = '$' + (data.rent0 * Math.pow(2, i));
-                    line.classList.toggle('active', (i+1) === sCount);
+                    line.classList.toggle('active', (i + 1) === sCount && ownerOrder !== undefined);
+                } else {
+                    line.style.display = 'none';
                 }
-                document.getElementById('rent-4').style.display = 'none';
-                document.getElementById('rent-5').style.display = 'none';
             }
         } else {
             document.getElementById('rent-info-area').style.display = 'none';
         }
 
-        // Кнопки управления (только для владельца)
+        // Кнопки купить/заложить
         const btnArea = document.getElementById('action-buttons');
-        if (isMine && !isWalking) {
+        if (ownerOrder === myOrder && !isWalking) {
             btnArea.style.display = 'flex';
             const upBtn = document.getElementById('main-upgrade-btn');
             const mortBtn = document.getElementById('mortgage-btn');
+            const isM = globalMortgageData[cellId]?.is_mortgaged;
 
-            if (mort.is_mortgaged) {
+            if (isM) {
                 upBtn.style.display = 'none';
                 mortBtn.innerText = "ВЫКУПИТЬ";
             } else {
-                upBtn.style.display = (data.type === 'property' ? 'block' : 'none');
+                upBtn.style.display = (isProp ? 'block' : 'none');
                 upBtn.disabled = (globalFishLevels[cellId] >= 5);
                 mortBtn.innerText = "ЗАЛОЖИТЬ";
             }
@@ -1026,43 +889,35 @@
     }
 
     function hideUpgrade() { document.getElementById('upgrade-panel').style.display = 'none'; }
+    async function confirmUpgrade() { await fetch(`/api/upgrade_property/${gameId}/${selectedCellForUpgrade}`, { method: 'POST' }); syncGame(); hideUpgrade(); }
+    async function toggleMortgage() { const isM = globalMortgageData[selectedCellForUpgrade]?.is_mortgaged; await fetch(`/api/${isM ? 'unmortgage_property' : 'mortgage_property'}/${gameId}/${selectedCellForUpgrade}`, { method: 'POST' }); syncGame(); hideUpgrade(); }
 
-    async function confirmUpgrade() {
-        const res = await fetch(`/api/upgrade_property/${gameId}/${selectedCellForUpgrade}`, { method: 'POST' }).then(r => r.json());
-        if (res.success) syncGame();
-        else alert(res.error);
-        hideUpgrade();
-    }
-
-    async function toggleMortgage() {
-        const isM = globalMortgageData[selectedCellForUpgrade]?.is_mortgaged;
-        const url = isM ? 'unmortgage_property' : 'mortgage_property';
-        await fetch(`/api/${url}/${gameId}/${selectedCellForUpgrade}`, { method: 'POST' });
-        syncGame();
-        hideUpgrade();
-    }
-
-    /*
-       =========================================
-       11. СИСТЕМА ДОГОВОРОВ (ТРЕЙДЫ)
-       =========================================
-    */
+    /** СИСТЕМА ТРЕЙДА **/
     let currentTradeTargetOrder = null;
-
     async function openTradeModal(targetOrder) {
+        // Блокировка, если не мой ход
+        if (currentTurnOrderGlobal !== myOrder) {
+            alert("Вы можете предлагать договор только в свой ход!");
+            return;
+        }
+
         currentTradeTargetOrder = targetOrder;
         document.getElementById('trade-window').style.display = 'block';
 
-        // Получаем списки имущества обоих игроков
         const myInf = await fetch(`/api/get_trade_info/${gameId}/${myOrder}`).then(r => r.json());
         const thInf = await fetch(`/api/get_trade_info/${gameId}/${targetOrder}`).then(r => r.json());
 
         const render = (props, contId) => {
-            document.getElementById(contId).innerHTML = props.map(p =>
-                `<div><input type="checkbox" value="${p.id}" class="${contId}-cb"> ${p.name}</div>`
-            ).join('');
+            document.getElementById(contId).innerHTML = props.map(p => {
+                const color = cellDataMap[p.id]?.color || 'gray';
+                return `
+                <label class="trade-prop-item">
+                    <input type="checkbox" value="${p.id}" class="${contId}-cb">
+                    <div class="trade-prop-color ${color}"></div>
+                    <span>${p.name}</span>
+                </label>`;
+            }).join('');
         };
-
         render(myInf.properties, 'my-props-list');
         render(thInf.properties, 'their-props-list');
     }
@@ -1070,27 +925,17 @@
     function closeTradeModal() { document.getElementById('trade-window').style.display = 'none'; }
 
     async function sendTradeProposal() {
-        const offM = document.getElementById('offer-money').value || 0;
-        const reqM = document.getElementById('request-money').value || 0;
+        const offM = document.getElementById('offer-money').value || 0, reqM = document.getElementById('request-money').value || 0;
         const offP = Array.from(document.querySelectorAll('.my-props-list-cb:checked')).map(c => c.value).join(',');
         const reqP = Array.from(document.querySelectorAll('.their-props-list-cb:checked')).map(c => c.value).join(',');
-
         const targetData = await fetch(`/api/get_trade_info/${gameId}/${currentTradeTargetOrder}`).then(r => r.json());
 
         const form = new FormData();
-        form.append('recipient_id', targetData.player_id);
-        form.append('offer_money', offM);
-        form.append('request_money', reqM);
-        form.append('offer_props', offP);
-        form.append('request_props', reqP);
+        form.append('recipient_id', targetData.player_id); form.append('offer_money', offM); form.append('request_money', reqM);
+        form.append('offer_props', offP); form.append('request_props', reqP);
 
         const res = await fetch(`/api/create_trade/${gameId}`, { method: 'POST', body: form }).then(r => r.json());
-        if (res.status === 'ok') {
-            alert("Сделка предложена!");
-            closeTradeModal();
-        } else {
-            alert(res.error);
-        }
+        if (res.status === 'ok') { alert("Договор предложен!"); closeTradeModal(); } else alert(res.error);
     }
 
     async function respondTrade(action) {
@@ -1099,141 +944,125 @@
         syncGame();
     }
 
-    /*
-       =========================================
-       12. СИНХРОНИЗАЦИЯ И ОБНОВЛЕНИЕ UI
-       =========================================
-    */
+    /** СИНХРОНИЗАЦИЯ **/
     async function syncGame() {
         if (isWalking || gameEnded) return;
-
         try {
             const res = await fetch(`/api/game_state/${gameId}`).then(r => r.json());
-
-            // 1. Проверка завершения
             if (res.status === "finished") {
-                gameEnded = true;
-                const isWin = res.winner_id === res.my_id;
+                gameEnded = true; const isWin = res.winner_id === res.my_id;
                 document.getElementById(isWin ? 'win-screen' : 'lose-screen').style.display = 'flex';
                 if (isWin) document.getElementById('win-avatar').src = res.winner_avatar;
                 return;
             }
 
-            // 2. Кубики
-            if (res.dice_roll_at && res.dice_roll_at !== lastRollAt) {
-                lastRollAt = res.dice_roll_at;
-                await animateDice(res.last_dice[0], res.last_dice[1]);
-            }
+            if (res.dice_roll_at && res.dice_roll_at !== lastRollAt) { lastRollAt = res.dice_roll_at; await animateDice(res.last_dice[0], res.last_dice[1]); }
 
-            // 3. Игроки и деньги
+            // Сохраняем чей сейчас ход для блокировки кнопок
+            currentTurnOrderGlobal = res.current_turn;
+
             for (let p of res.players) {
-                if (playerPositions[p.order] !== p.pos) {
-                    await animateWalk(p.order, p.pos);
-                }
+                if (playerPositions[p.order] !== p.pos) await animateWalk(p.order, p.pos);
                 document.getElementById(`money-${p.order}`).innerText = `$${p.money}`;
                 const card = document.getElementById(`card-${p.order}`);
                 if (card) card.classList.toggle('active-turn', res.current_turn === p.order);
+
+                // Динамическая блокировка кнопок договора
+                const trBtn = document.getElementById(`btn-trade-${p.order}`);
+                if (trBtn) { trBtn.disabled = (res.current_turn !== myOrder); }
             }
 
-            // 4. Тюрьма и управление броском
             const me = res.players.find(p => p.order === myOrder);
-            document.getElementById('jail-pay-btn').style.display =
-                (me?.is_in_jail && res.current_turn === myOrder && !res.can_buy_now) ? 'block' : 'none';
+            document.getElementById('jail-pay-btn').style.display = (me?.is_in_jail && res.current_turn === myOrder && !res.can_buy_now) ? 'block' : 'none';
 
             if (res.can_buy_now && res.current_turn === myOrder && !isWalking) {
                 document.getElementById('buy-cell-name').innerText = res.current_cell_data.name;
                 document.getElementById('buy-cell-price-text').innerText = "$" + res.current_cell_data.price;
-                document.getElementById('buy-action-panel').style.display = 'flex';
-                document.getElementById('roll-btn').style.display = 'none';
+                document.getElementById('buy-action-panel').style.display = 'flex'; document.getElementById('roll-btn').style.display = 'none';
             } else {
-                document.getElementById('buy-action-panel').style.display = 'none';
-                document.getElementById('roll-btn').style.display = 'block';
+                document.getElementById('buy-action-panel').style.display = 'none'; document.getElementById('roll-btn').style.display = 'block';
                 document.getElementById('roll-btn').disabled = (res.current_turn !== myOrder);
             }
 
-            // 5. Входящие сделки
             if (res.incoming_trade) {
-                activeTradeId = res.incoming_trade.id;
-                document.getElementById('trade-sender-name').innerText = res.incoming_trade.sender_name;
-                document.getElementById('trade-summary').innerHTML =
-                    `<b>Вы получите:</b> $${res.incoming_trade.offer_money} ${res.incoming_trade.offer_prop_names}<br>` +
-                    `<b>Вы отдадите:</b> $${res.incoming_trade.request_money} ${res.incoming_trade.request_prop_names}`;
+                activeTradeId = res.incoming_trade.id; document.getElementById('trade-sender-name').innerText = res.incoming_trade.sender_name;
+                document.getElementById('trade-summary').innerHTML = `<b>Получите:</b> $${res.incoming_trade.offer_money} ${res.incoming_trade.offer_prop_names}<br><b>Отдадите:</b> $${res.incoming_trade.request_money} ${res.incoming_trade.request_prop_names}`;
                 document.getElementById('incoming-trade-alert').style.display = 'block';
-            } else {
-                document.getElementById('incoming-trade-alert').style.display = 'none';
-            }
+            } else document.getElementById('incoming-trade-alert').style.display = 'none';
 
-            // 6. Отрисовка владений и рыб на поле
-            globalFishLevels = res.fish_levels;
-            globalMortgageData = res.mortgages;
-            globalOwnerships = res.ownerships;
+            globalFishLevels = res.fish_levels; globalMortgageData = res.mortgages; globalOwnerships = res.ownerships;
 
-            document.querySelectorAll('.cell').forEach(c => {
-                c.classList.remove('owned-by-1','owned-by-2','owned-by-3','owned-by-4','owned-by-5','owned-by-6');
-            });
+            // ОБНОВЛЕНИЕ ПОЛЯ И ЦЕН (ДИНАМИКА)
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('owned-by-1','owned-by-2','owned-by-3','owned-by-4','owned-by-5','owned-by-6'));
             document.querySelectorAll('.fish-container').forEach(fc => fc.innerHTML = '');
             document.querySelectorAll('.mortgage-overlay').forEach(ov => ov.remove());
 
             Object.keys(globalOwnerships).forEach(cid => {
                 const idx = parseInt(cid) - 1;
                 const el = document.getElementById(`cell-${idx}`);
-                if (el) {
-                    el.classList.add(`owned-by-${globalOwnerships[cid]}`);
+                const priceEl = document.getElementById(`cell-price-display-${cid}`);
+                const ownerOrder = globalOwnerships[cid];
 
-                    // Залог
+                if (el) {
+                    el.classList.add(`owned-by-${ownerOrder}`);
+
+                    // Обновление цен и текста аренды
+                    if (priceEl) {
+                        const cellD = cellDataMap[cid];
+                        let currentRentText = "$" + cellD.price;
+                        if (globalMortgageData[cid]?.is_mortgaged) {
+                            currentRentText = "В ЗАЛОГЕ";
+                            priceEl.style.color = "#FF3B30";
+                        } else if (cellD.type === 'property') {
+                            const mults = [1, 5, 15, 40, 70, 100];
+                            const rent = cellD.rent0 * mults[globalFishLevels[cid] || 0];
+                            currentRentText = "АРЕНДА $" + rent;
+                            priceEl.style.color = "#701A1A";
+                        } else if (cellD.type === 'station') {
+                            const sCount = Object.keys(globalOwnerships).filter(id => cellDataMap[id].type === 'station' && globalOwnerships[id] === ownerOrder).length;
+                            const rent = cellD.rent0 * Math.pow(2, sCount - 1);
+                            currentRentText = "АРЕНДА $" + rent;
+                            priceEl.style.color = "#0072BB";
+                        }
+                        priceEl.innerText = currentRentText;
+                    }
+
+                    // Отрисовка штампа залога
                     if (globalMortgageData[cid]?.is_mortgaged) {
                         el.insertAdjacentHTML('beforeend', '<div class="mortgage-overlay"><span class="mortgage-stamp">ЗАЛОГ</span></div>');
                     }
 
-                    // Рыбы
-                    const f = globalFishLevels[cid];
-                    if (f > 0) {
-                        const cont = document.getElementById(`fish-${cid}`);
-                        if (f >= 5) cont.innerHTML = '<i class="fa-solid fa-fish fish-icon big-fish"></i>';
-                        else cont.innerHTML = '<i class="fa-solid fa-fish fish-icon"></i>'.repeat(f);
+                    // --- ВОТ ТУТ ПУНКТ 2: ОТРИСОВКА РЫБОК ---
+                    const fLvl = globalFishLevels[cid] || 0;
+                    const fishCont = document.getElementById(`fish-${cid}`);
+                    if (fishCont) {
+                        fishCont.innerHTML = ''; // Очищаем старое
+                        // Рыбки рисуются только если поле не в залоге
+                        if (fLvl > 0 && !globalMortgageData[cid]?.is_mortgaged) {
+                            if (fLvl >= 5) {
+                                // Большая золотая рыбка (Отель)
+                                fishCont.innerHTML = '<i class="fa-solid fa-fish fish-icon big-fish"></i>';
+                            } else {
+                                // Маленькие рыбки
+                                for (let i = 0; i < fLvl; i++) {
+                                    fishCont.innerHTML += '<i class="fa-solid fa-fish fish-icon"></i>';
+                                }
+                            }
+                        }
                     }
                 }
             });
 
-            // 7. Логи и чат
             document.getElementById('log-content').innerHTML = res.logs.map(l => `<div>${formatLogText(l)}</div>`).join('');
-            document.getElementById('chat-messages').innerHTML = res.chat.map(m => {
-                const order = nameToOrderMap[m.name] || 0;
-                return `<div><b class="user-color-${order}">${m.name}:</b> ${m.text}</div>`;
-            }).join('');
-
-            document.getElementById('turn-indicator').innerText = res.current_turn === myOrder ? "ТВОЙ ХОД" : "ХОД ДРУГОГО КОТА";
-
-        } catch (e) {
-            console.error("Sync error:", e);
-        }
+            document.getElementById('chat-messages').innerHTML = res.chat.map(m => `<div><b class="user-color-${nameToOrderMap[m.name] || 0}">${m.name}:</b> ${m.text}</div>`).join('');
+            document.getElementById('turn-indicator').innerText = res.current_turn === myOrder ? "ТВОЙ ХОД" : "ХОД ДРУГОГО ИГРОКА";
+        } catch (e) { console.error("Sync error:", e); }
     }
 
-    /*
-       =========================================
-       13. ВСПОМОГАТЕЛЬНЫЕ ИНТЕРФЕЙСНЫЕ ФУНКЦИИ
-       =========================================
-    */
-    async function sendMessage() {
-        const i = document.getElementById('chat-input');
-        if (!i.value.trim()) return;
-        const f = new FormData();
-        f.append('text', i.value);
-        await fetch(`/api/send_message/${gameId}`, { method: 'POST', body: f });
-        i.value = '';
-    }
+    async function sendMessage() { const i = document.getElementById('chat-input'); if (!i.value.trim()) return; const f = new FormData(); f.append('text', i.value); await fetch(`/api/send_message/${gameId}`, { method: 'POST', body: f }); i.value = ''; }
+    async function handleSurrender() { if (confirm("Сдаться?")) { await fetch(`/api/surrender/${gameId}`, { method: 'POST' }); window.location.href = '/api/search'; } }
 
-    async function handleSurrender() {
-        if (confirm("Вы точно хотите сдаться и оставить коробку?")) {
-            await fetch(`/api/surrender/${gameId}`, { method: 'POST' });
-            window.location.href = '/api/search';
-        }
-    }
-
-    // Запуск цикла синхронизации
-    setInterval(syncGame, 2000);
-    syncGame();
-
+    setInterval(syncGame, 2000); syncGame();
 </script>
 </body>
 </html>
