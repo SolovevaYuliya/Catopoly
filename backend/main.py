@@ -351,18 +351,27 @@ async def surrender(game_id: int, db: Session = Depends(get_db), user: models.us
 
         # 3. ЛОГИКА ПЕРЕДАЧИ ХОДА (Самое важное!)
         if game.current_player_turn == p_order:
-            # Ищем всех остальных игроков
+            # Ищем всех КРОМЕ того, кто сдается
             others = db.query(models.game_player).filter(
                 models.game_player.game_id == game_id,
                 models.game_player.id != p_id
             ).all()
 
             if others:
-                # Находим следующий порядок хода
+                # Берем список всех порядковых номеров ходов
                 orders = [pl.turn_order for pl in others]
+                # Пытаемся найти того, кто идет после нас
                 next_potential = [o for o in orders if o > p_order]
-                game.current_player_turn = min(next_potential) if next_potential else min(orders)
-                game.has_rolled = False  # Новый игрок должен кинуть кубики
+
+                if next_potential:
+                    game.current_player_turn = min(next_potential)
+                else:
+                    game.current_player_turn = min(orders)
+
+                game.has_rolled = False
+            else:
+                # Если игроков больше нет — завершаем игру
+                game.status = "finished"
 
         # 4. Лог
         new_log = models.game_log(
