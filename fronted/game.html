@@ -993,7 +993,7 @@
             alert("КРИТИЧЕСКАЯ ОШИБКА: Сервер сбросил соединение (тот самый SSL). Жми 'Отправить' еще раз.");
         }
     }
-    
+
     async function respondTrade(action) {
         await fetch(`/api/respond_trade/${gameId}/${activeTradeId}/${action}`, { method: 'POST' });
         document.getElementById('incoming-trade-alert').style.display = 'none';
