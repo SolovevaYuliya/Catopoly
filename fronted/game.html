@@ -892,12 +892,14 @@
     async function confirmUpgrade() { await fetch(`/api/upgrade_property/${gameId}/${selectedCellForUpgrade}`, { method: 'POST' }); syncGame(); hideUpgrade(); }
     async function toggleMortgage() { const isM = globalMortgageData[selectedCellForUpgrade]?.is_mortgaged; await fetch(`/api/${isM ? 'unmortgage_property' : 'mortgage_property'}/${gameId}/${selectedCellForUpgrade}`, { method: 'POST' }); syncGame(); hideUpgrade(); }
 
+    /** СИСТЕМА ТРЕЙДА (ОБНОВЛЕННАЯ) **/
     let currentTradeTargetOrder = null;
-    let currentRecipientId = null; // Добавляем переменную для хранения ID игрока
+    let currentRecipientId = null;
 
     async function openTradeModal(targetOrder) {
+        // Проверка: твой ли ход
         if (currentTurnOrderGlobal !== myOrder) {
-            alert("Вы можете предлагать договор только в свой ход!");
+            alert("Погоди, сейчас не твой ход! Договоры можно слать только в свой ход.");
             return;
         }
 
@@ -905,29 +907,34 @@
         const modal = document.getElementById('trade-window');
         modal.style.display = 'block';
 
-        document.getElementById('my-props-list').innerHTML = "<div style='color:orange'>Загрузка...</div>";
-        document.getElementById('their-props-list').innerHTML = "<div style='color:orange'>Загрузка...</div>";
+        const myBox = document.getElementById('my-props-list');
+        const thBox = document.getElementById('their-props-list');
+
+        myBox.innerHTML = "<div style='color:orange'>Загрузка твоих полей...</div>";
+        thBox.innerHTML = "<div style='color:orange'>Загрузка полей кота...</div>";
 
         try {
-            const [myInf, thInf] = await Promise.all([
-                fetch(`/api/get_trade_info/${gameId}/${myOrder}`).then(r => r.json()),
-                fetch(`/api/get_trade_info/${gameId}/${targetOrder}`).then(r => r.json())
-            ]);
+            const r1 = await fetch(`/api/get_trade_info/${gameId}/${myOrder}`);
+            const r2 = await fetch(`/api/get_trade_info/${gameId}/${targetOrder}`);
 
-            // ЗАПОМИНАЕМ реальный ID получателя сразу, чтобы не запрашивать его второй раз
+            if (!r1.ok || !r2.ok) throw new Error("Сервер базы данных тупит (SSL)");
+
+            const myInf = await r1.json();
+            const thInf = await r2.json();
+
             currentRecipientId = thInf.player_id;
 
             const render = (props, contId) => {
                 if (!props || props.length === 0) {
-                    document.getElementById(contId).innerHTML = "<div style='opacity:0.5; padding:10px;'>Нет полей</div>";
+                    document.getElementById(contId).innerHTML = "<div style='opacity:0.5; padding:10px;'>Пусто</div>";
                     return;
                 }
                 document.getElementById(contId).innerHTML = props.map(p => {
-                    const colorClass = cellDataMap[p.id]?.color || 'gray';
+                    const color = cellDataMap[p.id]?.color || 'gray';
                     return `
                     <label class="trade-prop-item">
                         <input type="checkbox" value="${p.id}" class="${contId}-cb">
-                        <div class="trade-prop-color ${colorClass}"></div>
+                        <div class="trade-prop-color ${color}"></div>
                         <span style="color:white">${p.name}</span>
                     </label>`;
                 }).join('');
@@ -937,8 +944,9 @@
             render(thInf.properties, 'their-props-list');
 
         } catch (err) {
-            console.error("Trade loading error:", err);
-            alert("Ошибка при загрузке данных игрока.");
+            alert("ОШИБКА: База данных Supabase временно недоступна. Попробуй через 5 секунд.");
+            console.error(err);
+            closeTradeModal();
         }
     }
 
@@ -949,48 +957,43 @@
     }
 
     async function sendTradeProposal() {
-        // Если ID не загрузился, не даем отправить
         if (!currentRecipientId) {
-            alert("Ошибка: данные игрока еще не загружены.");
+            alert("Данные еще не подгрузились, подожди секунду.");
             return;
         }
 
         const offM = parseInt(document.getElementById('offer-money').value) || 0;
         const reqM = parseInt(document.getElementById('request-money').value) || 0;
-
         const offP = Array.from(document.querySelectorAll('.my-props-list-cb:checked')).map(c => c.value).join(',');
         const reqP = Array.from(document.querySelectorAll('.their-props-list-cb:checked')).map(c => c.value).join(',');
 
         if (offM <= 0 && reqM <= 0 && !offP && !reqP) {
-            alert("Договор не может быть пустым!");
+            alert("Договор пустой. Добавь денег или выбери поля!");
             return;
         }
 
         const form = new FormData();
-        form.append('recipient_id', currentRecipientId); // Используем сохраненный ID
+        form.append('recipient_id', currentRecipientId);
         form.append('offer_money', offM);
         form.append('request_money', reqM);
         form.append('offer_props', offP);
         form.append('request_props', reqP);
 
         try {
-            const res = await fetch(`/api/create_trade/${gameId}`, {
-                method: 'POST',
-                body: form
-            }).then(r => r.json());
+            const res = await fetch(`/api/create_trade/${gameId}`, { method: 'POST', body: form });
+            const data = await res.json();
 
-            if (res.status === 'ok') {
-                alert("Договор успешно отправлен!");
+            if (data.status === 'ok') {
+                alert("УРА! Договор отправлен коту.");
                 closeTradeModal();
             } else {
-                alert("Ошибка сервера: " + (res.error || "неизвестно"));
+                alert("ОШИБКА СЕРВЕРА: " + (data.error || "Неизвестно"));
             }
         } catch (err) {
-            console.error("Proposal send error:", err);
-            alert("Не удалось отправить договор. Проверьте консоль.");
+            alert("КРИТИЧЕСКАЯ ОШИБКА: Сервер сбросил соединение (тот самый SSL). Жми 'Отправить' еще раз.");
         }
     }
-
+    
     async function respondTrade(action) {
         await fetch(`/api/respond_trade/${gameId}/${activeTradeId}/${action}`, { method: 'POST' });
         document.getElementById('incoming-trade-alert').style.display = 'none';
