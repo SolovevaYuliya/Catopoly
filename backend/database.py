@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy.pool import NullPool # Импортируем это!
+from sqlalchemy.pool import NullPool
 
 # Получаем URL
 SQLALCHEMY_DATABASE_URL = os.getenv(
@@ -16,12 +16,15 @@ if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://")
 # Настройки для облака (Supabase)
 connect_args = {}
 if "localhost" not in SQLALCHEMY_DATABASE_URL:
-    connect_args = {"sslmode": "require"}
+    connect_args = {
+        "sslmode": "require",
+        "prepare_threshold": 0  # <--- ВОТ ЭТА СТРОЧКА ВСЁ ЧИНИТ!
+    }
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args=connect_args,
-    poolclass=NullPool # ЭТО ГЛАВНОЕ: закрываем соединение сразу после запроса
+    poolclass=NullPool
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
