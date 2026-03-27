@@ -328,39 +328,32 @@ async def surrender(game_id: int, db: Session = Depends(get_db), user: models.us
     if not user:
         return {"error": "Вы не авторизованы"}
 
+    # 1. Ищем игру и запись игрока
     game = db.query(models.games).filter(models.games.id == game_id).first()
     player_entry = db.query(models.game_player).filter(
         models.game_player.game_id == game_id,
         models.game_player.user_id == user.id
     ).first()
 
-    if player_entry:
+    if not player_entry:
+        return {"error": "Вы не в игре"}
+
+    try:
         p_id = player_entry.id
         p_order = player_entry.turn_order
 
-        # 1. Возвращаем поля банку
-        db.query(models.property_ownership).filter(
-            models.property_ownership.owner_id == p_id,
-            models.property_ownership.game_id == game_id
-        ).delete()
+        # 2. ОПРЕДЕЛЯЕМ ОСТАВШИХСЯ ИГРОКОВ
+        others = db.query(models.game_player).filter(
+            models.game_player.game_id == game_id,
+            models.game_player.id != p_id
+        ).all()
 
-        # 2. Удаляем его сделки
-        db.query(models.trades).filter(
-            (models.trades.sender_id == p_id) | (models.trades.recipient_id == p_id)
-        ).delete()
-
-        # 3. ЛОГИКА ПЕРЕДАЧИ ХОДА (Самое важное!)
+        # 3. ЛОГИКА ПЕРЕДАЧИ ХОДА
         if game.current_player_turn == p_order:
-            # Ищем всех КРОМЕ того, кто сдается
-            others = db.query(models.game_player).filter(
-                models.game_player.game_id == game_id,
-                models.game_player.id != p_id
-            ).all()
-
             if others:
-                # Берем список всех порядковых номеров ходов
-                orders = [pl.turn_order for pl in others]
-                # Пытаемся найти того, кто идет после нас
+                # Список порядковых номеров остальных игроков
+                orders = sorted([pl.turn_order for pl in others])
+                # Ищем того, кто идет после нас
                 next_potential = [o for o in orders if o > p_order]
 
                 if next_potential:
@@ -370,24 +363,44 @@ async def surrender(game_id: int, db: Session = Depends(get_db), user: models.us
 
                 game.has_rolled = False
             else:
-                # Если игроков больше нет — завершаем игру
+                # Если никого не осталось (технически невозможно, но на всякий случай)
                 game.status = "finished"
 
-        # 4. Лог
-        new_log = models.game_log(
-            game_id=game_id, player_id=p_id,
-            action_text=f"собрал свои вещи и добровольно покинул коробку (сдался).",
-            created_at=datetime.now(timezone.utc)
-        )
-        db.add(new_log)
+        # 4. ПРОВЕРКА НА ЗАВЕРШЕНИЕ ИГРЫ (Если остался 1 человек — он победил)
+        if len(others) == 1:
+            game.status = "finished"
+            game.winner_id = others[0].user_id
+            game.finished_at = datetime.now(timezone.utc)
 
-        # 5. Удаляем игрока
+        # 5. ЧИСТКА ЗАВИСИМОСТЕЙ (ВАЖНО ДЛЯ POSTGRESQL)
+        # Сначала удаляем логи, так как они ссылаются на player_id
+        db.query(models.game_log).filter(models.game_log.player_id == p_id).delete()
+
+        # Удаляем владения (возвращаем поля в банк)
+        db.query(models.property_ownership).filter(
+            models.property_ownership.game_id == game_id,
+            models.property_ownership.owner_id == p_id
+        ).delete()
+
+        # Удаляем сделки, связанные с этим игроком
+        db.query(models.trades).filter(
+            (models.trades.sender_id == p_id) | (models.trades.recipient_id == p_id)
+        ).delete()
+
+        # Удаляем сообщения в чате (опционально, если есть FK)
+        # db.query(models.game_chat).filter(models.game_chat.user_id == user.id, models.game_chat.game_id == game_id).delete()
+
+        # 6. УДАЛЯЕМ ИГРОКА И ФИКСИРУЕМ ИЗМЕНЕНИЯ
         db.delete(player_entry)
         db.commit()
 
         return {"success": True}
 
-    return {"error": "Вы не в игре"}
+    except Exception as e:
+        # Если произошла ошибка — отменяем все изменения в базе
+        db.rollback()
+        print(f"ОШИБКА ПРИ СДАЧЕ: {e}")
+        return {"error": f"Ошибка сервера: {str(e)}"}
 
 # --- ЛОГИКА ЧАТА ---
 

@@ -1041,11 +1041,38 @@
     }
 
     async function handleSurrender() {
-        if (confirm("Точно сдаться?")) {
-            await fetch(`/api/surrender/${gameId}`, { method: 'POST' });
-            window.location.href = '/api/search';
+    if (!confirm("Вы действительно хотите сдаться? Ваше имущество вернется в банк.")) return;
+
+    // 1. ОСТАНАВЛИВАЕМ синхронизацию немедленно
+    gameEnded = true;
+
+    try {
+        const response = await fetch(`/api/surrender/${gameId}`, { method: 'POST' });
+        const result = await response.json();
+
+        if (result.success) {
+            // 2. Показываем экран "ТЫ ОБАНКРОТИЛСЯ" (lose-screen)
+            // Он у вас уже прописан в HTML (id="lose-screen")
+            const loseScreen = document.getElementById('lose-screen');
+            if (loseScreen) {
+                loseScreen.style.display = 'flex';
+            } else {
+                // Если экрана нет, просто уходим
+                window.location.href = '/api/search';
+            }
+
+            // Очищаем кэш инвайтов, чтобы global_sync не сработал после редиректа
+            sessionStorage.removeItem('last_lobbies_count');
+            sessionStorage.removeItem('last_invites_count');
+        } else {
+            alert("Ошибка сервера: " + result.error);
+            gameEnded = false; // Возвращаем синхронизацию, если не вышло
         }
+    } catch (e) {
+        console.error("Ошибка при сдаче:", e);
+        gameEnded = false;
     }
+}
 
     setInterval(syncGame, 2000);
     syncGame();
