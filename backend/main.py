@@ -607,7 +607,7 @@ async def roll_dice(game_id: int, db: Session = Depends(get_db), user: models.us
                 }
                 c_up = cell_name.upper()
                 event_key = None
-                if "МЯУ-СТАРТ" in c_up:
+                if "СТАРТ" in c_up:
                     event_key = "START"
                 elif any(x in c_up for x in ["НАЛОГ", "ШТРАФ", "СБОР"]):
                     event_key = "TAX"

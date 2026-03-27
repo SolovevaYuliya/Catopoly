@@ -1,12 +1,75 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8"><title>Игровые поля | Catopoly</title>
+    <meta charset="UTF-8">
+    <title>Игровые поля | Catopoly</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/static/MainMenu.css">
+    <link rel="stylesheet" href="/static/profile_styles.css">
+    <style>
+
+        .field-tab {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #3C4C37;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .field-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .field-tab.active {
+            background: #BFDBAE;
+            color: #1A261B;
+            border-color: #BFDBAE;
+        }
+
+        .board-display {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            /* ДОБАВЛЕН ОТСТУП ТУТ */
+            margin-top: 30px;
+        }
+
+        .board-image-container {
+            width: 80vh;
+            height: 80vh;
+            background-size: cover;
+            background-position: center;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border: 5px solid #3C4C37;
+            transition: 0.5s ease-in-out;
+        }
+
+        .board-info {
+            text-align: center;
+        }
+
+        .board-title {
+            font-size: 36px;
+            font-weight: 900;
+            margin-bottom: 10px;
+        }
+
+        .board-desc {
+            color: #839680;
+            font-size: 18px;
+            max-width: 600px;
+        }
+    </style>
 </head>
 <body>
 <div class="app-container">
+  <!-- ЛЕВЫЙ САЙДБАР (КОПИЯ ИЗ ПРОФИЛЯ) -->
   <aside class="sidebar">
     <div class="logo">CATOPOLY</div>
     <nav class="nav-menu">
@@ -17,46 +80,51 @@
       <a href="/api/fields" class="nav-item active"><i class="fa-solid fa-border-all"></i> Игровые поля</a>
     </nav>
   </aside>
+
+  <!-- ОСНОВНОЙ КОНТЕНТ -->
   <main class="main-content">
     <header class="top-bar">
       <div class="capsule-wrapper"><div class="title-capsule">Игровые поля</div></div>
       <div class="player-section">
           <div class="player-info">
-              <div class="avatar-box" style="background-image: url('{{ user.avatar_url if user.avatar_url else '' }}');"></div>
+              <div class="avatar-box" style="background-image: url('{{ user.avatar_url if user.avatar_url else '/static/default_cat.png' }}');"></div>
               <span class="player-name">{{ user.username }}</span>
           </div>
           <a href="/logout"><i class="fa-solid fa-arrow-right-from-bracket logout-btn"></i></a>
       </div>
     </header>
-    <div class="content-body" style="justify-content: flex-start; padding-top: 40px;">
-        <div class="fields-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; width: 100%;">
-            <div class="field-card" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Улица 1 (Светло-коричневая)</div>
-            <div class="field-card" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Улица 2 (Темно-коричневая)</div>
-            <div class="field-card" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Улица 3 (Оливковая)</div>
-            <div class="field-card" style="background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Улица 4 (Черная)</div>
-            <div class="field-card" style="background: #3C4C37; padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Старт</div>
-            <div class="field-card" style="background: #701A1A; padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Тюрьма</div>
-            <div class="field-card" style="background: #EEDC82; padding: 30px; border-radius: 20px; color: #5C1515; text-align: center; font-weight: bold;">Бесплатная парковка</div>
-            <div class="field-card" style="background: #701A1A; padding: 30px; border-radius: 20px; color: white; text-align: center; font-weight: bold;">Отправка в тюрьму</div>
+
+    <div class="content-body" style="justify-content: flex-start; align-items: center; padding-top: 0;">
+
+        <!-- ОТОБРАЖЕНИЕ ВЫБРАННОГО ПОЛЯ -->
+        <div class="board-display">
+            <div id="boardImage" class="board-image-container" style="background-image: url('/uploads/pole.png');"></div>
         </div>
+
     </div>
   </main>
-
-  {% if pending_invites %}
-  <div class="floating-notifications">
-      {% for invite, sender_name in pending_invites %}
-      <div class="invite-toast">
-          <div class="toast-header">Новый инвайт!</div>
-          <div class="toast-body">Игрок <b>{{ sender_name }}</b> приглашает тебя в игру #{{ invite.game_id }}</div>
-          <div class="toast-btns">
-              <a href="/accept_invite/{{ invite.id }}" class="btn-toast btn-toast-acc">ПРИНЯТЬ</a>
-              <a href="/decline_invite/{{ invite.id }}" class="btn-toast btn-toast-dec">ОТКЛОНИТЬ</a>
-          </div>
-      </div>
-      {% endfor %}
-  </div>
-  {% endif %}
 </div>
+
+<script>
+    // Данные для вкладок
+    const fieldsData = {
+        classic: {
+            title: "Классическое поле",
+            image: "/uploads/pole.png"
+        }
+    };
+
+    function switchField(element, fieldKey) {
+        document.querySelectorAll('.field-tab').forEach(tab => tab.classList.remove('active'));
+        element.classList.add('active');
+
+        const data = fieldsData[fieldKey];
+        document.getElementById('boardImage').style.backgroundImage = `url('${data.image}')`;
+        document.getElementById('boardTitle').innerText = data.title;
+        document.getElementById('boardDesc').innerText = data.desc;
+    }
+</script>
+
 <script src="/static/global_sync.js"></script>
 </body>
 </html>
