@@ -16,11 +16,7 @@ if SQLALCHEMY_DATABASE_URL and SQLALCHEMY_DATABASE_URL.startswith("postgres://")
 # Настройки для облака (Supabase)
 connect_args = {}
 if "localhost" not in SQLALCHEMY_DATABASE_URL:
-    # ИЗМЕНЕНО ТУТ: Добавлен prepare_threshold, чтобы работали ТРЕЙДЫ
-    connect_args = {
-        "sslmode": "require",
-        "prepare_threshold": 0
-    }
+    connect_args = {"sslmode": "require"}
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
